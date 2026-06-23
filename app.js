@@ -20,7 +20,7 @@ const defaultData = {
       { id: crypto.randomUUID(), text: "배고파요", speak: "배고파요", image: "" }
     ] }
   ],
-  updatedAt: Date.now()
+  updatedAt: 0
 };
 
 let data = loadData();
@@ -333,8 +333,16 @@ async function initFirebase() {
     const ref = doc(db, "aac", "siel");
     onSnapshot(ref, (snap) => {
       if (!snap.exists()) return;
+
       const cloud = snap.data().payload;
-      if (cloud && cloud.updatedAt > (data.updatedAt || 0)) {
+      if (!cloud || !cloud.categories) return;
+
+      const localText = JSON.stringify(data);
+      const cloudText = JSON.stringify(cloud);
+
+      // 새 기기나 휴대폰에서 기본 데이터가 먼저 떠도
+      // Firestore에 저장된 실제 데이터를 반드시 화면에 반영합니다.
+      if (cloudText !== localText) {
         data = cloud;
         localStorage.setItem(STORE_KEY, JSON.stringify(data));
         currentCategory = null;
