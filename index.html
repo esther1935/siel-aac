@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#fff7d6" />
+  <title>시엘 AAC</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button id="backBtn" class="ghost hidden">←</button>
+      <h1 id="title">시엘 AAC</h1>
+      <button id="adminBtn" class="ghost">관리</button>
+    </header>
+
+    <main>
+      <section id="statusBar" class="status">오프라인에서도 사용할 수 있어요.</section>
+      <section id="recentSection" class="panel hidden">
+        <h2>최근 사용</h2>
+        <div id="recentGrid" class="grid small"></div>
+      </section>
+      <section id="grid" class="grid"></section>
+    </main>
+
+    <dialog id="viewer">
+      <button id="closeViewer" class="close">×</button>
+      <img id="viewerImg" alt="" />
+      <div id="viewerText"></div>
+      <button id="speakAgain" class="primary">다시 듣기</button>
+    </dialog>
+
+    <dialog id="adminDialog">
+      <form method="dialog" class="adminBox">
+        <button class="close">×</button>
+        <h2>엄마 관리</h2>
+        <input id="pinInput" type="password" inputmode="numeric" placeholder="관리 PIN 입력" />
+        <button id="loginBtn" class="primary" type="button">관리 시작</button>
+
+        <div id="adminPanel" class="hidden">
+          <label>카테고리</label>
+          <select id="categorySelect"></select>
+          <input id="newCategory" placeholder="새 카테고리 이름 예: 학교" />
+          <button id="addCategoryBtn" type="button">카테고리 추가</button>
+
+          <hr />
+
+          <label>그림 이름</label>
+          <input id="cardText" placeholder="예: 쉬고 싶어요" />
+
+          <label>소리 문장</label>
+          <input id="cardSpeak" placeholder="예: 쉬고 싶어요" />
+
+          <label>그림 추가 (자동 압축)</label>
+          <input id="imageInput" type="file" accept="image/*" />
+
+          <button id="addCardBtn" class="primary" type="button">그림 추가 (자동 압축)</button>
+
+          <hr />
+
+          <h3>현재 그림 삭제</h3>
+          <div id="deleteList" class="deleteList"></div>
+
+          <hr />
+
+          <button id="exportBtn" type="button">백업 다운로드</button>
+          <label class="importLabel">백업 불러오기
+            <input id="importInput" type="file" accept="application/json" />
+          </label>
+
+          <p class="help">
+            그림은 자동으로 800px/WebP로 압축되어 저장됩니다. Firebase 설정을 넣으면 엄마폰에서 수정한 내용이 갤럭시탭에 자동 반영됩니다.
+            설정 전에는 기기 안에만 저장됩니다.
+          </p>
+        </div>
+      </form>
+    </dialog>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
