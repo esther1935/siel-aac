@@ -140,8 +140,9 @@ function renderAdmin() {
         <strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong>
         <button type="button">삭제</button>
       `;
-      row.querySelector("button").onclick = () => {
+      row.querySelector("button").onclick = async () => {
         if (confirm(`'${card.text}' 그림을 삭제할까요?`)) {
+          await deleteImageFromStorageIfReady(card);
           cat.cards = cat.cards.filter(c => c.id !== card.id);
           saveData();
         }
@@ -191,6 +192,38 @@ async function fileToDataUrl(file) {
   });
 }
 
+
+async function uploadImageToStorageIfReady(file, cardId) {
+  const compressedDataUrl = await fileToDataUrl(file);
+
+  if (!firebaseReady || !firebaseReady.getStorage) {
+    return { image: compressedDataUrl, storagePath: "" };
+  }
+
+  const { getStorage, storageRef, uploadString, getDownloadURL } = firebaseReady;
+  const storage = getStorage();
+  const path = `aac-cards/${cardId}.jpg`;
+  const ref = storageRef(storage, path);
+
+  await uploadString(ref, compressedDataUrl, "data_url");
+  const url = await getDownloadURL(ref);
+
+  return { image: url, storagePath: path };
+}
+
+async function deleteImageFromStorageIfReady(card) {
+  if (!card || !card.storagePath || !firebaseReady || !firebaseReady.getStorage) return;
+
+  try {
+    const { getStorage, storageRef, deleteObject } = firebaseReady;
+    const storage = getStorage();
+    const ref = storageRef(storage, card.storagePath);
+    await deleteObject(ref);
+  } catch (e) {
+    console.warn("Storage 이미지 삭제 실패:", e);
+  }
+}
+
 $("backBtn").onclick = () => { currentCategory = null; render(); };
 $("adminBtn").onclick = () => $("adminDialog").showModal();
 $("closeViewer").onclick = () => $("viewer").close();
@@ -223,14 +256,23 @@ $("addCardBtn").onclick = async () => {
     return;
   }
 
+  const cardId = crypto.randomUUID();
   let image = "";
-  if (file) image = await fileToDataUrl(file);
+  let storagePath = "";
 
-  cat.cards.push({ id: crypto.randomUUID(), text, speak: speakText, image });
+  if (file) {
+    $("statusBar").textContent = "그림을 압축하고 클라우드에 저장하는 중...";
+    const uploaded = await uploadImageToStorageIfReady(file, cardId);
+    image = uploaded.image;
+    storagePath = uploaded.storagePath || "";
+  }
+
+  cat.cards.push({ id: cardId, text, speak: speakText, image, storagePath });
   $("cardText").value = "";
   $("cardSpeak").value = "";
   $("imageInput").value = "";
   saveData();
+  $("statusBar").textContent = storagePath ? "그림이 클라우드에 저장되었어요." : "그림이 기기 안에 저장되었어요.";
 };
 
 $("exportBtn").onclick = () => {
@@ -272,9 +314,20 @@ async function initFirebase() {
     const configModule = await import("./firebase-config.js");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
+
     const app = initializeApp(configModule.firebaseConfig);
     db = getFirestore(app);
-    firebaseReady = { doc, setDoc, onSnapshot };
+    firebaseReady = {
+      doc,
+      setDoc,
+      onSnapshot,
+      getStorage,
+      storageRef,
+      uploadString,
+      getDownloadURL,
+      deleteObject
+    };
 
     const ref = doc(db, "aac", "siel");
     onSnapshot(ref, (snap) => {
