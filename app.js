@@ -2,7 +2,6 @@ const ADMIN_PIN = "1208"; // 원하면 엄마가 바꿔도 됩니다.
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
 
-let data = loadData();
 let currentCategory = null;
 let firebaseReady = false;
 let db = null;
@@ -23,6 +22,8 @@ const defaultData = {
   ],
   updatedAt: Date.now()
 };
+
+let data = loadData();
 
 function loadData() {
   const saved = localStorage.getItem(STORE_KEY);
