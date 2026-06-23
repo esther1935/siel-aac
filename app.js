@@ -2,7 +2,8 @@ const ADMIN_PIN = "1208";
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
 
-let currentCategory = null;
+let selectedCategoryId = "all";
+let sentenceCards = [];
 let firebaseReady = false;
 let db = null;
 
@@ -57,63 +58,118 @@ function speak(text) {
 }
 
 function render() {
-  $("title").textContent = currentCategory ? currentCategory.name : "시엘 AAC";
-  $("backBtn").classList.toggle("hidden", !currentCategory);
-  renderRecent();
-  if (!currentCategory) renderCategories();
-  else renderCards(currentCategory);
+  renderSentence();
+  renderCategoryBar();
+  renderCards();
   renderAdmin();
 }
 
-function renderCategories() {
-  const grid = $("grid");
-  grid.innerHTML = "";
+function renderSentence() {
+  const area = $("sentenceCanvas");
+  area.innerHTML = "";
+
+  if (sentenceCards.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "sentenceEmpty";
+    empty.textContent = "그림을 누르면 여기에 문장이 만들어져요";
+    area.appendChild(empty);
+    return;
+  }
+
+  sentenceCards.forEach((card, index) => {
+    const chip = document.createElement("button");
+    chip.className = "sentenceChip";
+    chip.innerHTML = `
+      ${card.image ? `<img src="${card.image}" alt="">` : `<div class="miniNoImage"></div>`}
+      <span>${escapeHtml(card.text)}</span>
+      <b>×</b>
+    `;
+    chip.onclick = () => {
+      sentenceCards.splice(index, 1);
+      renderSentence();
+    };
+    area.appendChild(chip);
+  });
+
+  const clear = document.createElement("button");
+  clear.className = "sentenceClear";
+  clear.textContent = "비우기";
+  clear.onclick = () => {
+    sentenceCards = [];
+    renderSentence();
+  };
+  area.appendChild(clear);
+}
+
+function renderCategoryBar() {
+  const bar = $("categoryBar");
+  bar.innerHTML = "";
+
+  const all = document.createElement("button");
+  all.className = selectedCategoryId === "all" ? "catTab active" : "catTab";
+  all.textContent = "전체";
+  all.onclick = () => {
+    selectedCategoryId = "all";
+    render();
+  };
+  bar.appendChild(all);
+
   data.categories.forEach(cat => {
-    const el = document.createElement("button");
-    el.className = "card categoryCard";
-    el.innerHTML = `<div class="label">${escapeHtml(cat.name)}</div>`;
-    el.onclick = () => { currentCategory = cat; render(); };
-    grid.appendChild(el);
+    const btn = document.createElement("button");
+    btn.className = selectedCategoryId === cat.id ? "catTab active" : "catTab";
+    btn.textContent = cat.name;
+    btn.onclick = () => {
+      selectedCategoryId = cat.id;
+      render();
+    };
+    bar.appendChild(btn);
   });
 }
 
-function renderCards(cat) {
-  const grid = $("grid");
-  grid.innerHTML = "";
-  cat.cards.forEach(card => {
+function getVisibleCards() {
+  if (selectedCategoryId === "all") {
+    return data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
+  }
+  const cat = data.categories.find(c => c.id === selectedCategoryId);
+  if (!cat) return [];
+  return cat.cards.map(card => ({ ...card, categoryName: cat.name }));
+}
+
+function renderCards() {
+  const scroller = $("cardScroller");
+  scroller.innerHTML = "";
+
+  const cards = getVisibleCards();
+
+  if (cards.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "cardsEmpty";
+    empty.textContent = "아직 그림이 없어요. 관리에서 그림을 추가해 주세요.";
+    scroller.appendChild(empty);
+    return;
+  }
+
+  cards.forEach(card => {
     const el = document.createElement("button");
     el.className = "card";
     el.innerHTML = `
-      ${card.image ? `<img src="${card.image}" alt="">` : `<img alt="">`}
+      ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
       <div class="label">${escapeHtml(card.text)}</div>
     `;
-    el.onclick = () => openCard(card);
-    grid.appendChild(el);
+    el.onclick = () => addToSentence(card);
+    scroller.appendChild(el);
   });
 }
 
-function renderRecent() {
-  const recent = getRecent();
-  $("recentSection").classList.toggle("hidden", currentCategory !== null || recent.length === 0);
-  const grid = $("recentGrid");
-  grid.innerHTML = "";
-  recent.forEach(card => {
-    const el = document.createElement("button");
-    el.className = "card";
-    el.innerHTML = `
-      ${card.image ? `<img src="${card.image}" alt="">` : `<img alt="">`}
-      <div class="label">${escapeHtml(card.text)}</div>
-    `;
-    el.onclick = () => openCard(card);
-    grid.appendChild(el);
+function addToSentence(card) {
+  sentenceCards.push({
+    id: card.id,
+    text: card.text,
+    speak: card.speak || card.text,
+    image: card.image || ""
   });
-}
-
-function openCard(card) {
   addRecent(card);
-  $("viewerImg").src = card.image || "";
-  $("viewerText").textContent = card.text;
-  $("viewer").showModal();
+  renderSentence();
   speak(card.speak || card.text);
 }
 
@@ -125,7 +181,7 @@ function getRecent() {
 function addRecent(card) {
   let recent = getRecent().filter(x => x.id !== card.id);
   recent.unshift(card);
-  recent = recent.slice(0, 6);
+  recent = recent.slice(0, 12);
   localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
 }
 
@@ -154,6 +210,7 @@ function renderAdmin() {
         if (confirm(`'${card.text}' 그림을 삭제할까요?`)) {
           await deleteImageFromStorageIfReady(card);
           cat.cards = cat.cards.filter(c => c.id !== card.id);
+          sentenceCards = sentenceCards.filter(c => c.id !== card.id);
           saveData();
         }
       };
@@ -249,10 +306,7 @@ async function clearOldCachesOnce() {
   }
 }
 
-$("backBtn").onclick = () => { currentCategory = null; render(); };
 $("adminBtn").onclick = () => $("adminDialog").showModal();
-$("closeViewer").onclick = () => $("viewer").close();
-$("speakAgain").onclick = () => speak($("viewerText").textContent);
 
 $("loginBtn").onclick = () => {
   if ($("pinInput").value === ADMIN_PIN) {
@@ -267,6 +321,7 @@ $("addCategoryBtn").onclick = () => {
   if (!name) return;
   data.categories.push({ id: crypto.randomUUID(), name, icon: "", cards: [] });
   $("newCategory").value = "";
+  selectedCategoryId = "all";
   saveData();
 };
 
@@ -297,6 +352,7 @@ $("addCardBtn").onclick = async () => {
     $("cardText").value = "";
     $("cardSpeak").value = "";
     $("imageInput").value = "";
+    selectedCategoryId = cat.id;
     saveData();
     $("statusBar").textContent = storagePath ? "그림이 클라우드에 저장되었어요." : "그림이 기기 안에 저장되었어요.";
   } catch (e) {
@@ -339,7 +395,7 @@ window.addEventListener("offline", () => {
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=clean20260623");
+    const configModule = await import("./firebase-config.js?v=horizontal20260623");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -371,7 +427,6 @@ async function initFirebase() {
       if (cloud && Array.isArray(cloud.categories)) {
         data = cloud;
         saveLocalOnly();
-        currentCategory = null;
         render();
         $("statusBar").textContent = "클라우드 데이터 반영 완료";
       } else {
