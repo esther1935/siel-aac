@@ -1,12 +1,37 @@
-// Firebase를 쓰려면 이 파일 이름을 firebase-config.js로 바꾸고,
-// Firebase Console에서 받은 설정값을 아래에 넣으세요.
-// 설정하지 않아도 앱은 기기 안 저장 방식으로 작동합니다.
+# 시엘 AAC 앱 1차 버전
 
-export const firebaseConfig = {
-  apiKey: "여기에 입력",
-  authDomain: "여기에 입력",
-  projectId: "여기에 입력",
-  storageBucket: "여기에 입력",
-  messagingSenderId: "여기에 입력",
-  appId: "여기에 입력"
-};
+## 핵심 기능
+- 갤럭시탭에 설치해서 오프라인 사용 가능
+- 엄마 관리 모드에서 그림 추가 / 삭제
+- 카테고리: 학교, 집, 치료실, 감정
+- 그림을 누르면 확대 + 한국어 음성 출력
+- 최근 사용 그림 자동 표시
+- 백업 다운로드 / 백업 불러오기
+- Firebase 설정 시 엄마폰 수정 → 갤럭시탭 자동 업데이트
+
+## 관리자 PIN
+기본 PIN: 1208  
+변경하려면 app.js 맨 위의 ADMIN_PIN 값을 바꾸세요.
+
+## 설치 방법
+1. 이 폴더를 웹서버 또는 Firebase Hosting에 올립니다.
+2. 갤럭시탭 Chrome에서 주소 접속
+3. 메뉴 → 홈 화면에 추가
+4. 이후 와이파이가 꺼져도 저장된 그림으로 사용 가능합니다.
+
+## Firebase 동기화 사용
+1. firebase-config.sample.js 파일을 복사해서 firebase-config.js 로 이름 변경
+2. Firebase Console에서 웹앱 설정값을 넣기
+3. Firebase Firestore를 시작
+4. 다시 배포
+
+주의: 실제 학교/치료실 사용 전에는 반드시 집에서 오프라인 테스트를 해보세요.
+
+
+## Storage 최종 연결 버전
+
+- 그림 업로드 시 자동 압축
+- 압축된 그림을 Firebase Storage `aac-cards/` 폴더에 저장
+- Firestore에는 그림 URL과 카드 정보만 저장
+- 갤럭시탭에서는 와이파이 연결 시 자동 동기화
+- 삭제 시 Storage 이미지도 함께 삭제 시도

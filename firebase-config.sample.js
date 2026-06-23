@@ -1,20 +1,8 @@
-{
-  "name": "시엘 AAC",
-  "short_name": "시엘AAC",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#fffaf0",
-  "theme_color": "#fff7d6",
-  "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-}
+export const firebaseConfig = {
+  apiKey: "AIzaSyBR7YI-QnWx71RIMA7jvdjm6aOk2gfMLsY",
+  authDomain: "siel-aac.firebaseapp.com",
+  projectId: "siel-aac",
+  storageBucket: "siel-aac.firebasestorage.app",
+  messagingSenderId: "395970778132",
+  appId: "1:395970778132:web:a2ae814683bad51cc20301"
+};
