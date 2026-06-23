@@ -155,87 +155,41 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-function fileToDataUrl(file) {
+async function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
+    const img = new Image();
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
+
+    reader.onload = (e) => {
+      img.onload = () => {
+        const maxSize = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > maxSize) {
+          height *= maxSize / width;
+          width = maxSize;
+        } else if (height > maxSize) {
+          width *= maxSize / height;
+          height = maxSize;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.src = e.target.result;
+    };
+
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
-
-
-// 이미지 자동 압축: AAC 앱이 무겁지 않게 원본 사진을 작게 변환합니다.
-// 기본값: 긴 변 최대 800px, WebP 품질 0.75
-async function compressImageFile(file, maxSize = 800, quality = 0.75) {
-  if (!file || !file.type || !file.type.startsWith("image/")) return "";
-  const originalBytes = file.size || 0;
-
-  const imageBitmap = await createImageBitmap(file);
-  let { width, height } = imageBitmap;
-
-  const scale = Math.min(1, maxSize / Math.max(width, height));
-  const targetWidth = Math.max(1, Math.round(width * scale));
-  const targetHeight = Math.max(1, Math.round(height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-
-  const ctx = canvas.getContext("2d", { alpha: false });
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, targetWidth, targetHeight);
-  ctx.drawImage(imageBitmap, 0, 0, targetWidth, targetHeight);
-
-  const blob = await new Promise((resolve) => {
-    canvas.toBlob(resolve, "image/webp", quality);
-  });
-
-  if (!blob) {
-    // 일부 구형 브라우저 예외 대비: 기존 DataURL 방식으로 저장
-    return {
-      dataUrl: await fileToDataUrl(file),
-      originalBytes,
-      compressedBytes: originalBytes,
-      width,
-      height,
-      targetWidth: width,
-      targetHeight: height,
-      format: file.type
-    };
-  }
-
-  const dataUrl = await blobToDataUrl(blob);
-  return {
-    dataUrl,
-    originalBytes,
-    compressedBytes: blob.size,
-    width,
-    height,
-    targetWidth,
-    targetHeight,
-    format: "image/webp"
-  };
-}
-
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-}
-
-function formatBytes(bytes) {
-  if (!bytes && bytes !== 0) return "";
-  if (bytes < 1024) return `${bytes}B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-}
-
 
 $("backBtn").onclick = () => { currentCategory = null; render(); };
 $("adminBtn").onclick = () => $("adminDialog").showModal();
@@ -270,31 +224,9 @@ $("addCardBtn").onclick = async () => {
   }
 
   let image = "";
-  let imageMeta = null;
-  if (file) {
-    imageMeta = await compressImageFile(file, 800, 0.75);
-    image = imageMeta.dataUrl;
-    if (imageMeta && imageMeta.originalBytes && imageMeta.compressedBytes) {
-      const saved = Math.max(0, imageMeta.originalBytes - imageMeta.compressedBytes);
-      console.log(`이미지 압축 완료: ${formatBytes(imageMeta.originalBytes)} → ${formatBytes(imageMeta.compressedBytes)} / 절약 ${formatBytes(saved)}`);
-    }
-  }
+  if (file) image = await fileToDataUrl(file);
 
-  cat.cards.push({
-    id: crypto.randomUUID(),
-    text,
-    speak: speakText,
-    image,
-    imageMeta: imageMeta ? {
-      originalBytes: imageMeta.originalBytes,
-      compressedBytes: imageMeta.compressedBytes,
-      width: imageMeta.width,
-      height: imageMeta.height,
-      targetWidth: imageMeta.targetWidth,
-      targetHeight: imageMeta.targetHeight,
-      format: imageMeta.format
-    } : null
-  });
+  cat.cards.push({ id: crypto.randomUUID(), text, speak: speakText, image });
   $("cardText").value = "";
   $("cardSpeak").value = "";
   $("imageInput").value = "";
