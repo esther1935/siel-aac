@@ -4,23 +4,55 @@ const RECENT_KEY = "siel_aac_recent_v1";
 
 let selectedCategoryId = "all";
 let sentenceCards = [];
+let searchTerm = "";
 let firebaseReady = false;
 let db = null;
 
 const $ = (id) => document.getElementById(id);
 
+const categoryIcons = {
+  "전체": "🌈",
+  "마이크": "🎤",
+  "집": "🏠",
+  "학교": "🏫",
+  "늘봄": "🌱",
+  "기관": "🏢",
+  "치료기관": "🏢",
+  "치료실": "💬",
+  "병원": "🏥",
+  "감정": "😊",
+  "음식": "🍊",
+  "교회": "⛪",
+  "나들이": "🚗",
+  "놀이": "🧸",
+  "가족": "👨‍👩‍👦",
+  "한글": "가",
+  "숫자": "123"
+};
+
 const defaultData = {
   categories: [
-    { id: crypto.randomUUID(), name: "학교", icon: "", cards: [] },
-    { id: crypto.randomUUID(), name: "집", icon: "", cards: [] },
-    { id: crypto.randomUUID(), name: "치료실", icon: "", cards: [] },
-    { id: crypto.randomUUID(), name: "감정", icon: "", cards: [
+    { id: crypto.randomUUID(), name: "마이크", icon: "🎤", cards: [] },
+    { id: crypto.randomUUID(), name: "집", icon: "🏠", cards: [] },
+    { id: crypto.randomUUID(), name: "학교", icon: "🏫", cards: [] },
+    { id: crypto.randomUUID(), name: "늘봄", icon: "🌱", cards: [] },
+    { id: crypto.randomUUID(), name: "기관", icon: "🏢", cards: [] },
+    { id: crypto.randomUUID(), name: "병원", icon: "🏥", cards: [] },
+    { id: crypto.randomUUID(), name: "감정", icon: "😊", cards: [
       { id: crypto.randomUUID(), text: "쉬고 싶어요", speak: "쉬고 싶어요", image: "" },
       { id: crypto.randomUUID(), text: "도와주세요", speak: "도와주세요", image: "" },
       { id: crypto.randomUUID(), text: "졸려요", speak: "졸려요", image: "" },
       { id: crypto.randomUUID(), text: "배고파요", speak: "배고파요", image: "" }
-    ] }
+    ] },
+    { id: crypto.randomUUID(), name: "음식", icon: "🍊", cards: [] },
+    { id: crypto.randomUUID(), name: "교회", icon: "⛪", cards: [] },
+    { id: crypto.randomUUID(), name: "나들이", icon: "🚗", cards: [] },
+    { id: crypto.randomUUID(), name: "놀이", icon: "🧸", cards: [] },
+    { id: crypto.randomUUID(), name: "가족", icon: "👨‍👩‍👦", cards: [] },
+    { id: crypto.randomUUID(), name: "한글", icon: "가", cards: [] },
+    { id: crypto.randomUUID(), name: "숫자", icon: "123", cards: [] }
   ],
+  board: "",
   updatedAt: 0
 };
 
@@ -32,6 +64,7 @@ function loadData() {
   try {
     const parsed = JSON.parse(saved);
     if (!parsed || !Array.isArray(parsed.categories)) return structuredClone(defaultData);
+    if (typeof parsed.board !== "string") parsed.board = "";
     return parsed;
   } catch {
     return structuredClone(defaultData);
@@ -66,6 +99,7 @@ function render() {
 
 function renderSentence() {
   const area = $("sentenceCanvas");
+  const sentenceText = $("sentenceText");
   area.innerHTML = "";
 
   if (sentenceCards.length === 0) {
@@ -73,6 +107,7 @@ function renderSentence() {
     empty.className = "sentenceEmpty";
     empty.textContent = "그림을 누르면 여기에 문장이 만들어져요";
     area.appendChild(empty);
+    sentenceText.textContent = "";
     return;
   }
 
@@ -91,14 +126,7 @@ function renderSentence() {
     area.appendChild(chip);
   });
 
-  const clear = document.createElement("button");
-  clear.className = "sentenceClear";
-  clear.textContent = "비우기";
-  clear.onclick = () => {
-    sentenceCards = [];
-    renderSentence();
-  };
-  area.appendChild(clear);
+  sentenceText.textContent = sentenceCards.map(c => c.speak || c.text).join(" ");
 }
 
 function renderCategoryBar() {
@@ -107,7 +135,7 @@ function renderCategoryBar() {
 
   const all = document.createElement("button");
   all.className = selectedCategoryId === "all" ? "catTab active" : "catTab";
-  all.textContent = "전체";
+  all.innerHTML = `<span class="catIcon">🌈</span><span>전체</span>`;
   all.onclick = () => {
     selectedCategoryId = "all";
     render();
@@ -117,7 +145,8 @@ function renderCategoryBar() {
   data.categories.forEach(cat => {
     const btn = document.createElement("button");
     btn.className = selectedCategoryId === cat.id ? "catTab active" : "catTab";
-    btn.textContent = cat.name;
+    const icon = cat.icon || categoryIcons[cat.name] || "▫️";
+    btn.innerHTML = `<span class="catIcon">${escapeHtml(icon)}</span><span>${escapeHtml(cat.name)}</span>`;
     btn.onclick = () => {
       selectedCategoryId = cat.id;
       render();
@@ -127,12 +156,24 @@ function renderCategoryBar() {
 }
 
 function getVisibleCards() {
+  let cards;
   if (selectedCategoryId === "all") {
-    return data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
+    cards = data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
+  } else {
+    const cat = data.categories.find(c => c.id === selectedCategoryId);
+    cards = cat ? cat.cards.map(card => ({ ...card, categoryName: cat.name })) : [];
   }
-  const cat = data.categories.find(c => c.id === selectedCategoryId);
-  if (!cat) return [];
-  return cat.cards.map(card => ({ ...card, categoryName: cat.name }));
+
+  if (searchTerm.trim()) {
+    const q = searchTerm.trim().toLowerCase();
+    cards = cards.filter(card =>
+      (card.text || "").toLowerCase().includes(q) ||
+      (card.speak || "").toLowerCase().includes(q) ||
+      (card.categoryName || "").toLowerCase().includes(q)
+    );
+  }
+
+  return cards;
 }
 
 function renderCards() {
@@ -187,6 +228,7 @@ function addRecent(card) {
 
 function renderAdmin() {
   const select = $("categorySelect");
+  if (!select) return;
   select.innerHTML = "";
   data.categories.forEach(cat => {
     const option = document.createElement("option");
@@ -217,6 +259,9 @@ function renderAdmin() {
       del.appendChild(row);
     });
   });
+
+  $("boardText").value = data.board || "";
+  $("boardView").textContent = data.board || "게시판 내용이 없습니다.";
 }
 
 function escapeHtml(s) {
@@ -306,7 +351,15 @@ async function clearOldCachesOnce() {
   }
 }
 
+function openAdminTab(tab) {
+  $("uploadPanel").classList.toggle("hidden", tab !== "upload");
+  $("boardPanel").classList.toggle("hidden", tab !== "board");
+}
+
 $("adminBtn").onclick = () => $("adminDialog").showModal();
+$("menuBtn").onclick = () => $("adminDialog").showModal();
+$("showUploadBtn").onclick = () => openAdminTab("upload");
+$("showBoardBtn").onclick = () => openAdminTab("board");
 
 $("loginBtn").onclick = () => {
   if ($("pinInput").value === ADMIN_PIN) {
@@ -319,7 +372,8 @@ $("loginBtn").onclick = () => {
 $("addCategoryBtn").onclick = () => {
   const name = $("newCategory").value.trim();
   if (!name) return;
-  data.categories.push({ id: crypto.randomUUID(), name, icon: "", cards: [] });
+  const icon = categoryIcons[name] || "▫️";
+  data.categories.push({ id: crypto.randomUUID(), name, icon, cards: [] });
   $("newCategory").value = "";
   selectedCategoryId = "all";
   saveData();
@@ -362,6 +416,47 @@ $("addCardBtn").onclick = async () => {
   }
 };
 
+$("saveBoardBtn").onclick = () => {
+  data.board = $("boardText").value.trim();
+  saveData();
+  $("statusBar").textContent = "게시판이 저장되었어요.";
+};
+
+$("clearSentenceBtn").onclick = () => {
+  sentenceCards = [];
+  renderSentence();
+};
+
+$("searchInput").oninput = (e) => {
+  searchTerm = e.target.value;
+  renderCards();
+};
+
+$("clearSearchBtn").onclick = () => {
+  searchTerm = "";
+  $("searchInput").value = "";
+  renderCards();
+};
+
+$("voiceSearchBtn").onclick = () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("이 기기에서는 음성검색을 지원하지 않아요.");
+    return;
+  }
+  const rec = new SpeechRecognition();
+  rec.lang = "ko-KR";
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  rec.onresult = (event) => {
+    const text = event.results[0][0].transcript.trim();
+    searchTerm = text;
+    $("searchInput").value = text;
+    renderCards();
+  };
+  rec.start();
+};
+
 $("exportBtn").onclick = () => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
@@ -380,6 +475,7 @@ $("importInput").onchange = async (e) => {
     alert("백업 파일 형식이 달라요.");
     return;
   }
+  if (typeof imported.board !== "string") imported.board = "";
   data = imported;
   saveData();
 };
@@ -395,7 +491,7 @@ window.addEventListener("offline", () => {
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=horizontal20260623");
+    const configModule = await import("./firebase-config.js?v=v2sentence20260625");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -425,6 +521,7 @@ async function initFirebase() {
 
       const cloud = snap.data().payload;
       if (cloud && Array.isArray(cloud.categories)) {
+        if (typeof cloud.board !== "string") cloud.board = "";
         data = cloud;
         saveLocalOnly();
         render();
