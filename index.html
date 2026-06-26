@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#fff7d6" />
   <title>시엘 AAC</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=finalNamesOnly20260626" />
+  <link rel="stylesheet" href="./styles.css?v=adminFinal20260627" />
 </head>
 <body>
   <div id="app">
@@ -42,58 +42,60 @@
         <button class="close">×</button>
         <h2>시엘 AAC 메뉴</h2>
 
+        <input id="pinInput" type="password" inputmode="numeric" placeholder="관리비번" />
+
         <div class="adminMenu">
-          <button id="showUploadBtn" class="primary" type="button">그림 업로드</button>
-          <button id="showBoardBtn" type="button">시엘 게시판</button>
+          <button id="showUploadBtn" class="primary" type="button">그림 올리기</button>
+          <button id="showBoardBtn" type="button">게시판</button>
         </div>
 
-        <input id="pinInput" type="password" inputmode="numeric" placeholder="관리 PIN 입력" />
-        <button id="loginBtn" class="primary" type="button">관리 시작</button>
+        <button id="loginBtn" class="primary hidden" type="button">관리 시작</button>
 
-        <div id="adminPanel" class="hidden">
+        <div id="adminPanel">
           <section id="uploadPanel">
-            <label>카테고리</label>
-            <select id="categorySelect"></select>
-            <input id="newCategory" placeholder="새 카테고리 이름 예: 늘봄" />
-            <button id="addCategoryBtn" type="button">카테고리 추가</button>
+            <div class="adminRow">
+              <label>카테고리</label>
+              <div class="adminFieldGroup">
+                <select id="categorySelect"></select>
+                <input id="newCategory" placeholder="새로운 카테고리 이름 예: 늘봄" />
+                <button id="addCategoryBtn" class="primary rightBtn" type="button">카테고리 추가</button>
+              </div>
+            </div>
 
-            <hr />
+            <div class="adminRow imageAddRow">
+              <label>그림 이름</label>
+              <div class="adminFieldGroup">
+                <input id="imageInput" type="file" accept="image/*" />
+                <input id="cardText" placeholder="예 : 귤" />
+                <input id="cardSpeak" class="hidden" />
+                <button id="addCardBtn" class="primary rightBtn" type="button">그림 추가</button>
+                <button id="cancelEditBtn" class="hidden rightBtn" type="button">수정 취소</button>
+                <div class="editStatus" id="editStatus">새 그림 추가 모드입니다.</div>
+              </div>
+            </div>
 
-            <label>그림 이름</label>
-            <input id="cardText" placeholder="예: 귤" />
-
-            <label>소리 문장</label>
-            <input id="cardSpeak" placeholder="예: 귤 먹어요" />
-
-            <label>그림 추가</label>
-            <input id="imageInput" type="file" accept="image/*" />
-
-            <button id="addCardBtn" class="primary" type="button">그림 추가</button>
-
-            <hr />
-
-            <h3>현재 그림 삭제</h3>
+            <h3 class="manageTitle">현재 그림 수정, 삭제</h3>
             <div id="deleteList" class="deleteList"></div>
           </section>
 
           <section id="boardPanel" class="hidden">
             <h3>시엘 게시판</h3>
-            <textarea id="boardText" placeholder="예: 오늘 시엘이가 '귤 먹어요'를 자주 눌렀어요."></textarea>
+            <textarea id="boardText" placeholder="예: 오늘 시엘이가 '귤'을 자주 눌렀어요."></textarea>
             <button id="saveBoardBtn" class="primary" type="button">게시판 저장</button>
             <div id="boardView" class="boardView"></div>
           </section>
 
-          <hr />
-
-          <button id="exportBtn" type="button">백업 다운로드</button>
-          <label class="importLabel">백업 불러오기
-            <input id="importInput" type="file" accept="application/json" />
-          </label>
+          <div class="backupRow">
+            <button id="exportBtn" type="button">백업 다운로드</button>
+            <label class="importLabel">백업 불러오기
+              <input id="importInput" type="file" accept="application/json" />
+            </label>
+          </div>
         </div>
       </form>
     </dialog>
   </div>
 
-  <script type="module" src="./app.js?v=finalNamesOnly20260626"></script>
+  <script type="module" src="./app.js?v=adminFinal20260627"></script>
 </body>
 </html>

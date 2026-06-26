@@ -750,3 +750,175 @@ label[for="cardSpeak"],
   color: #777;
   font-size: 14px;
 }
+
+/* ADMIN FINAL 20260627 */
+#adminDialog {
+  width: min(92vw, 680px);
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.adminBox h2 {
+  margin: 22px 0 18px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+#pinInput {
+  background: #eaf1ff;
+  height: 50px;
+  font-size: 22px;
+  border: 1px solid #d9e2f5;
+}
+
+.adminMenu {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  margin: 12px 0 22px;
+}
+
+.adminMenu button {
+  height: 48px;
+  border-radius: 14px !important;
+  font-size: 20px !important;
+  font-weight: 900;
+}
+
+.adminRow {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 14px;
+  align-items: start;
+  margin: 14px 0;
+}
+
+.adminRow > label {
+  font-size: 24px;
+  font-weight: 900;
+  padding-top: 8px;
+}
+
+.adminFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adminFieldGroup input,
+.adminFieldGroup select {
+  height: 46px;
+  font-size: 20px;
+  border-radius: 9px;
+}
+
+.rightBtn {
+  align-self: flex-end;
+  min-width: 145px;
+  height: 48px;
+  font-size: 19px !important;
+  font-weight: 900;
+  border-radius: 12px !important;
+}
+
+.editStatus {
+  margin: 0;
+  color: #777;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.manageTitle {
+  margin: 34px 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #f0c85a;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.deleteList {
+  gap: 0 !important;
+}
+
+.deleteItem {
+  display: grid !important;
+  grid-template-columns: 58px 1fr 68px 68px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 62px;
+  border-bottom: 1px solid #f3f3f3;
+}
+
+.deleteThumb {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+}
+
+.deleteThumb img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.thumbEmpty {
+  width: 52px;
+  height: 52px;
+}
+
+.editCardBtn {
+  background: transparent !important;
+  padding: 0 !important;
+  text-align: left !important;
+  font-size: 15px !important;
+  font-weight: 900;
+}
+
+.smallEditBtn,
+.deleteBtn {
+  height: 48px;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  background: #eee !important;
+  font-size: 15px !important;
+  font-weight: 900;
+}
+
+.backupRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.backupRow button,
+.backupRow .importLabel {
+  height: 48px;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: #eee;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+@media (max-width: 520px) {
+  .adminRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .adminRow > label {
+    font-size: 21px;
+  }
+
+  .deleteItem {
+    grid-template-columns: 50px 1fr 58px 58px !important;
+  }
+
+  .smallEditBtn,
+  .deleteBtn {
+    height: 44px;
+    font-size: 14px !important;
+  }
+}
