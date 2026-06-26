@@ -5,15 +5,11 @@ const RECENT_KEY = "siel_aac_recent_v1";
 let selectedCategoryId = "all";
 let sentenceCards = [];
 let searchTerm = "";
+let selectedCardId = "";
 let firebaseReady = false;
 let db = null;
 
 const $ = (id) => document.getElementById(id);
-
-function setStatus(message) {
-  const el = $("statusBar");
-  if (el) el.textContent = message;
-}
 
 const categoryIcons = {
   "전체": "🌈",
@@ -29,7 +25,7 @@ const categoryIcons = {
   "음식": "🍊",
   "교회": "⛪",
   "나들이": "🚗",
-  "놀이": "🧸",
+  "놀이": "🌱",
   "가족": "👨‍👩‍👦",
   "한글": "가",
   "숫자": "123"
@@ -37,25 +33,18 @@ const categoryIcons = {
 
 const defaultData = {
   categories: [
-    { id: crypto.randomUUID(), name: "마이크", icon: "🎤", cards: [] },
-    { id: crypto.randomUUID(), name: "집", icon: "🏠", cards: [] },
     { id: crypto.randomUUID(), name: "학교", icon: "🏫", cards: [] },
-    { id: crypto.randomUUID(), name: "늘봄", icon: "🌱", cards: [] },
-    { id: crypto.randomUUID(), name: "기관", icon: "🏢", cards: [] },
-    { id: crypto.randomUUID(), name: "병원", icon: "🏥", cards: [] },
+    { id: crypto.randomUUID(), name: "집", icon: "🏠", cards: [] },
+    { id: crypto.randomUUID(), name: "치료실", icon: "💬", cards: [] },
     { id: crypto.randomUUID(), name: "감정", icon: "😊", cards: [
       { id: crypto.randomUUID(), text: "쉬고 싶어요", speak: "쉬고 싶어요", image: "" },
       { id: crypto.randomUUID(), text: "도와주세요", speak: "도와주세요", image: "" },
       { id: crypto.randomUUID(), text: "졸려요", speak: "졸려요", image: "" },
       { id: crypto.randomUUID(), text: "배고파요", speak: "배고파요", image: "" }
     ] },
+    { id: crypto.randomUUID(), name: "늘봄", icon: "🌱", cards: [] },
     { id: crypto.randomUUID(), name: "음식", icon: "🍊", cards: [] },
-    { id: crypto.randomUUID(), name: "교회", icon: "⛪", cards: [] },
-    { id: crypto.randomUUID(), name: "나들이", icon: "🚗", cards: [] },
-    { id: crypto.randomUUID(), name: "놀이", icon: "🧸", cards: [] },
-    { id: crypto.randomUUID(), name: "가족", icon: "👨‍👩‍👦", cards: [] },
-    { id: crypto.randomUUID(), name: "한글", icon: "가", cards: [] },
-    { id: crypto.randomUUID(), name: "숫자", icon: "123", cards: [] }
+    { id: crypto.randomUUID(), name: "가족", icon: "👨‍👩‍👦", cards: [] }
   ],
   board: "",
   updatedAt: 0
@@ -70,6 +59,10 @@ function loadData() {
     const parsed = JSON.parse(saved);
     if (!parsed || !Array.isArray(parsed.categories)) return structuredClone(defaultData);
     if (typeof parsed.board !== "string") parsed.board = "";
+    parsed.categories.forEach(cat => {
+      if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
+      if (!Array.isArray(cat.cards)) cat.cards = [];
+    });
     return parsed;
   } catch {
     return structuredClone(defaultData);
@@ -119,15 +112,21 @@ function renderSentence() {
   sentenceCards.forEach((card, index) => {
     const chip = document.createElement("button");
     chip.className = "sentenceChip";
+    chip.type = "button";
     chip.innerHTML = `
-      ${card.image ? `<img src="${card.image}" alt="">` : `<div class="miniNoImage"></div>`}
-      <span>${escapeHtml(card.text)}</span>
-      <b>×</b>
+      <div class="sentenceSpeak">${escapeHtml(card.speak || card.text)}</div>
+      <button class="removeChip" type="button" aria-label="삭제">×</button>
+      <div class="sentenceImageBox">
+        ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
+      </div>
+      <div class="sentenceLabel">${escapeHtml(card.text)}</div>
     `;
-    chip.onclick = () => {
+    chip.querySelector(".removeChip").onclick = (e) => {
+      e.stopPropagation();
       sentenceCards.splice(index, 1);
       renderSentence();
     };
+    chip.onclick = () => speak(card.speak || card.text);
     area.appendChild(chip);
   });
 
@@ -140,40 +139,38 @@ function renderCategoryBar() {
 
   const all = document.createElement("button");
   all.className = selectedCategoryId === "all" ? "catTab active" : "catTab";
+  all.type = "button";
   all.innerHTML = `<span class="catIcon">🌈</span><span>전체</span>`;
-  all.onclick = () => {
-    selectedCategoryId = "all";
-    searchTerm = "";
-    const input = $("searchInput");
-    if (input) input.value = "";
-    render();
-  };
+  all.onclick = () => selectCategory("all");
   bar.appendChild(all);
 
   data.categories.forEach(cat => {
     const btn = document.createElement("button");
     btn.className = selectedCategoryId === cat.id ? "catTab active" : "catTab";
+    btn.type = "button";
     const icon = cat.icon || categoryIcons[cat.name] || "▫️";
     btn.innerHTML = `<span class="catIcon">${escapeHtml(icon)}</span><span>${escapeHtml(cat.name)}</span>`;
-    btn.onclick = () => {
-      selectedCategoryId = cat.id;
-      searchTerm = "";
-      const input = $("searchInput");
-      if (input) input.value = "";
-      render();
-    };
+    btn.onclick = () => selectCategory(cat.id);
     bar.appendChild(btn);
   });
 }
 
+function selectCategory(id) {
+  selectedCategoryId = id;
+  searchTerm = "";
+  selectedCardId = "";
+  const input = $("searchInput");
+  if (input) input.value = "";
+  render();
+  requestAnimationFrame(updateDots);
+}
+
 function getVisibleCards() {
-  let cards;
   const q = searchTerm.trim().toLowerCase();
 
-  // 검색어가 있을 때는 선택된 카테고리와 상관없이 전체 카드에서 찾습니다.
   if (q) {
-    cards = data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
-    return cards.filter(card =>
+    const allCards = data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
+    return allCards.filter(card =>
       (card.text || "").toLowerCase().includes(q) ||
       (card.speak || "").toLowerCase().includes(q) ||
       (card.categoryName || "").toLowerCase().includes(q)
@@ -199,19 +196,66 @@ function renderCards() {
     empty.className = "cardsEmpty";
     empty.textContent = "아직 이 카테고리에 그림이 없어요.\n관리 메뉴에서 그림을 추가해 주세요.";
     scroller.appendChild(empty);
+    renderDots(0, 0);
     return;
   }
 
   cards.forEach(card => {
     const el = document.createElement("button");
-    el.className = "card";
+    el.type = "button";
+    el.className = card.id === selectedCardId ? "card selectedCard" : "card";
     el.innerHTML = `
-      ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
+      <div class="cardSpeak">${escapeHtml(card.speak || card.text)}</div>
+      <div class="cardImageBox">
+        ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
+      </div>
       <div class="label">${escapeHtml(card.text)}</div>
     `;
-    el.onclick = () => addToSentence(card);
+    el.onclick = () => {
+      selectedCardId = card.id;
+      addToSentence(card);
+      renderCards();
+    };
     scroller.appendChild(el);
   });
+
+  scroller.onscroll = () => updateDots();
+  requestAnimationFrame(updateDots);
+}
+
+function renderDots(total, active) {
+  const dots = $("pageDots");
+  dots.innerHTML = "";
+  if (total <= 1) return;
+
+  const left = document.createElement("span");
+  left.className = "dotArrow";
+  left.textContent = "‹";
+  dots.appendChild(left);
+
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement("span");
+    dot.className = i === active ? "dot active" : "dot";
+    dots.appendChild(dot);
+  }
+
+  const right = document.createElement("span");
+  right.className = "dotArrow";
+  right.textContent = "›";
+  dots.appendChild(right);
+}
+
+function updateDots() {
+  const scroller = $("cardScroller");
+  if (!scroller) return;
+  const maxScroll = scroller.scrollWidth - scroller.clientWidth;
+  if (maxScroll <= 10) {
+    renderDots(0, 0);
+    return;
+  }
+  const total = Math.min(8, Math.max(2, Math.ceil(scroller.scrollWidth / scroller.clientWidth)));
+  const active = Math.min(total - 1, Math.round((scroller.scrollLeft / maxScroll) * (total - 1)));
+  renderDots(total, active);
 }
 
 function addToSentence(card) {
@@ -241,6 +285,7 @@ function addRecent(card) {
 function renderAdmin() {
   const select = $("categorySelect");
   if (!select) return;
+
   select.innerHTML = "";
   data.categories.forEach(cat => {
     const option = document.createElement("option");
@@ -368,8 +413,7 @@ function openAdminTab(tab) {
   $("boardPanel").classList.toggle("hidden", tab !== "board");
 }
 
-const menuBtn = $("menuBtn");
-if (menuBtn) menuBtn.onclick = () => $("adminDialog").showModal();
+$("menuBtn").onclick = () => $("adminDialog").showModal();
 $("showUploadBtn").onclick = () => openAdminTab("upload");
 $("showBoardBtn").onclick = () => openAdminTab("board");
 
@@ -408,7 +452,6 @@ $("addCardBtn").onclick = async () => {
 
   try {
     if (file) {
-      setStatus("그림을 압축하고 클라우드에 저장하는 중...");
       const uploaded = await uploadImageToStorageIfReady(file, cardId);
       image = uploaded.image;
       storagePath = uploaded.storagePath || "";
@@ -420,10 +463,8 @@ $("addCardBtn").onclick = async () => {
     $("imageInput").value = "";
     selectedCategoryId = cat.id;
     saveData();
-    setStatus(storagePath ? "그림이 클라우드에 저장되었어요." : "그림이 기기 안에 저장되었어요.");
   } catch (e) {
     console.error(e);
-    setStatus("그림 저장 중 오류가 났어요.");
     alert("그림 저장 중 오류가 났어요. Firebase Storage 규칙을 확인해 주세요.");
   }
 };
@@ -431,7 +472,6 @@ $("addCardBtn").onclick = async () => {
 $("saveBoardBtn").onclick = () => {
   data.board = $("boardText").value.trim();
   saveData();
-  setStatus("게시판이 저장되었어요.");
 };
 
 $("clearSentenceBtn").onclick = () => {
@@ -441,63 +481,60 @@ $("clearSentenceBtn").onclick = () => {
 
 $("searchInput").oninput = (e) => {
   searchTerm = e.target.value;
+  selectedCardId = "";
   renderCards();
 };
 
+$("voiceSearchBtn").onclick = () => {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert("이 브라우저에서는 음성검색을 지원하지 않아요. Chrome에서 열어주세요.");
+    return;
+  }
 
-const voiceBtn = $("voiceSearchBtn");
-if (voiceBtn) {
-  voiceBtn.onclick = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("이 브라우저에서는 음성검색을 지원하지 않아요. Chrome에서 열어주세요.");
-      return;
-    }
+  try {
+    const rec = new SpeechRecognition();
+    rec.lang = "ko-KR";
+    rec.interimResults = false;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
 
-    try {
-      const rec = new SpeechRecognition();
-      rec.lang = "ko-KR";
-      rec.interimResults = false;
-      rec.continuous = false;
-      rec.maxAlternatives = 1;
+    $("voiceSearchBtn").classList.add("listening");
+    $("voiceSearchBtn").textContent = "🎙️";
 
-      voiceBtn.classList.add("listening");
-      voiceBtn.textContent = "🎙️";
+    rec.onresult = (event) => {
+      const spoken = event.results?.[0]?.[0]?.transcript || "";
+      const text = spoken.trim().replace(/[.!?。]/g, "");
+      searchTerm = text;
+      selectedCardId = "";
+      $("searchInput").value = text;
+      renderCards();
+    };
 
-      rec.onresult = (event) => {
-        const spoken = event.results?.[0]?.[0]?.transcript || "";
-        const text = spoken.trim().replace(/[.!?。]/g, "");
-        searchTerm = text;
-        const input = $("searchInput");
-        if (input) input.value = text;
-        renderCards();
-      };
+    rec.onerror = (event) => {
+      console.warn("음성검색 오류:", event.error);
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        alert("마이크 권한이 필요해요. 주소창의 자물쇠에서 마이크 권한을 허용해 주세요.");
+      } else if (event.error === "no-speech") {
+        alert("소리가 잘 들리지 않았어요. 다시 눌러 말해 주세요.");
+      } else {
+        alert("음성검색을 시작하지 못했어요. Chrome에서 다시 시도해 주세요.");
+      }
+    };
 
-      rec.onerror = (event) => {
-        console.warn("음성검색 오류:", event.error);
-        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-          alert("마이크 권한이 필요해요. 브라우저 주소창의 자물쇠에서 마이크 권한을 허용해 주세요.");
-        } else if (event.error === "no-speech") {
-          alert("소리가 잘 들리지 않았어요. 다시 눌러 말해 주세요.");
-        } else {
-          alert("음성검색을 시작하지 못했어요. Chrome에서 다시 시도해 주세요.");
-        }
-      };
+    rec.onend = () => {
+      $("voiceSearchBtn").classList.remove("listening");
+      $("voiceSearchBtn").textContent = "🎤";
+    };
 
-      rec.onend = () => {
-        voiceBtn.classList.remove("listening");
-        voiceBtn.textContent = "🎤";
-      };
-
-      rec.start();
-    } catch (e) {
-      console.error(e);
-      voiceBtn.classList.remove("listening");
-      voiceBtn.textContent = "🎤";
-      alert("음성검색을 시작하지 못했어요. Chrome에서 다시 시도해 주세요.");
-    }
-  };
-}
+    rec.start();
+  } catch (e) {
+    console.error(e);
+    $("voiceSearchBtn").classList.remove("listening");
+    $("voiceSearchBtn").textContent = "🎤";
+    alert("음성검색을 시작하지 못했어요. Chrome에서 다시 시도해 주세요.");
+  }
+};
 
 $("exportBtn").onclick = () => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -522,18 +559,11 @@ $("importInput").onchange = async (e) => {
   saveData();
 };
 
-window.addEventListener("online", () => {
-  setStatus("와이파이 연결됨: 업데이트를 확인할 수 있어요.");
-  initFirebase();
-});
-
-window.addEventListener("offline", () => {
-  setStatus("오프라인 모드: 저장된 그림으로 사용할 수 있어요.");
-});
+window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=v3bigsentence_20260625");
+    const configModule = await import("./firebase-config.js?v=cleanCarousel20260626");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -557,27 +587,25 @@ async function initFirebase() {
     onSnapshot(ref, async (snap) => {
       if (!snap.exists()) {
         await uploadToCloudIfReady();
-        setStatus("동기화 준비 완료");
         return;
       }
 
       const cloud = snap.data().payload;
       if (cloud && Array.isArray(cloud.categories)) {
         if (typeof cloud.board !== "string") cloud.board = "";
+        cloud.categories.forEach(cat => {
+          if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
+          if (!Array.isArray(cat.cards)) cat.cards = [];
+        });
         data = cloud;
         saveLocalOnly();
         render();
-        setStatus("클라우드 데이터 반영 완료");
-      } else {
-        setStatus("동기화 준비 완료");
       }
     }, (error) => {
       console.error("Firestore 읽기 실패:", error);
-      setStatus("기기 안 저장 모드");
     });
   } catch (e) {
     console.error("Firebase 초기화 실패:", e);
-    setStatus("기기 안 저장 모드");
   }
 }
 

@@ -6,17 +6,17 @@
   <meta name="theme-color" content="#fff7d6" />
   <title>시엘 AAC</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=v3bigsentence_20260625" />
+  <link rel="stylesheet" href="./styles.css?v=cleanCarousel20260626" />
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <button id="menuBtn" class="hamburger" type="button">☰</button>
       <h1>시엘 AAC</h1>
+      <div class="topSpacer"></div>
     </header>
 
     <main class="aacLayout">
-
       <section class="searchPanel">
         <span class="searchIcon">🔍</span>
         <input id="searchInput" type="search" placeholder="그림 검색 (전체 검색)" />
@@ -24,16 +24,14 @@
       </section>
 
       <section class="sentencePanel">
-        <div class="sentenceTop">
-          <strong>문장 만들기</strong>
-          <button id="clearSentenceBtn" type="button">모두 지우기</button>
-        </div>
+        <button id="clearSentenceBtn" class="clearSentenceBtn" type="button">모두 지우기</button>
         <div id="sentenceCanvas" class="sentenceCanvas"></div>
         <div id="sentenceText" class="sentenceText"></div>
       </section>
 
-      <section class="cardScrollerWrap">
+      <section class="cardsPanel">
         <div id="cardScroller" class="cardScroller"></div>
+        <div id="pageDots" class="pageDots"></div>
       </section>
 
       <nav id="categoryBar" class="categoryBar"></nav>
@@ -43,6 +41,7 @@
       <form method="dialog" class="adminBox">
         <button class="close">×</button>
         <h2>시엘 AAC 메뉴</h2>
+
         <div class="adminMenu">
           <button id="showUploadBtn" class="primary" type="button">그림 업로드</button>
           <button id="showBoardBtn" type="button">시엘 게시판</button>
@@ -79,7 +78,7 @@
 
           <section id="boardPanel" class="hidden">
             <h3>시엘 게시판</h3>
-            <textarea id="boardText" placeholder="예: 오늘 시엘이가 '자동차 타요'를 자주 눌렀어요."></textarea>
+            <textarea id="boardText" placeholder="예: 오늘 시엘이가 '귤 먹어요'를 자주 눌렀어요."></textarea>
             <button id="saveBoardBtn" class="primary" type="button">게시판 저장</button>
             <div id="boardView" class="boardView"></div>
           </section>
@@ -90,16 +89,11 @@
           <label class="importLabel">백업 불러오기
             <input id="importInput" type="file" accept="application/json" />
           </label>
-
-          <p class="help">
-            위는 문장 조합 공간, 가운데는 좌우로 넘기는 카드, 아래는 고정 카테고리입니다.
-            그림을 누르면 위에 쌓이고, 누른 순간 바로 읽어줍니다.
-          </p>
         </div>
       </form>
     </dialog>
   </div>
 
-  <script type="module" src="./app.js?v=v3bigsentence_20260625"></script>
+  <script type="module" src="./app.js?v=cleanCarousel20260626"></script>
 </body>
 </html>
