@@ -114,7 +114,6 @@ function renderSentence() {
     chip.className = "sentenceChip";
     chip.type = "button";
     chip.innerHTML = `
-      <div class="sentenceSpeak">${escapeHtml(card.speak || card.text)}</div>
       <button class="removeChip" type="button" aria-label="삭제">×</button>
       <div class="sentenceImageBox">
         ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
@@ -563,7 +562,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=cleanCarousel20260626");
+    const configModule = await import("./firebase-config.js?v=finalScreen20260626");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
