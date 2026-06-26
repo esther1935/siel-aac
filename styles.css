@@ -26,66 +26,93 @@ button {
   display: none !important;
 }
 
+/* 전체 화면 변수: 기기마다 자동 비율 */
+:root {
+  --top-h: clamp(52px, 8vh, 76px);
+  --search-h: clamp(42px, 6.2vh, 58px);
+  --cat-h: clamp(72px, 10vh, 92px);
+  --gap: clamp(5px, 1.1vh, 10px);
+  --side-pad: clamp(8px, 1.7vw, 18px);
+
+  --sentence-card-w: clamp(150px, 26vw, 300px);
+  --sentence-card-h: clamp(178px, 29vh, 310px);
+  --sentence-img-h: clamp(82px, 17vh, 190px);
+
+  --choice-card-w: clamp(118px, 17vw, 180px);
+  --choice-card-h: clamp(148px, 23vh, 210px);
+  --choice-img-h: clamp(72px, 13.5vh, 128px);
+
+  --select-gray: #A6A6A6;
+  --soft-yellow: #fff7d6;
+  --line-yellow: #eadca4;
+}
+
 /* 상단 */
 .topbar {
-  height: 76px;
+  height: var(--top-h);
   display: grid;
-  grid-template-columns: 66px 1fr 66px;
+  grid-template-columns: clamp(44px, 8vw, 66px) 1fr clamp(44px, 8vw, 66px);
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  background: #fff7d6;
-  border-bottom: 2px solid #eadca4;
+  gap: 8px;
+  padding: clamp(6px, 1vh, 10px) var(--side-pad);
+  background: var(--soft-yellow);
+  border-bottom: 2px solid var(--line-yellow);
 }
 
 .hamburger,
 .topSpacer {
-  width: 62px;
-  height: 54px;
+  width: clamp(42px, 7.3vw, 62px);
+  height: clamp(38px, 6.5vh, 54px);
 }
 
 .hamburger {
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: 18px;
-  font-size: 30px;
+  border-radius: clamp(12px, 2vw, 18px);
+  font-size: clamp(23px, 4vw, 30px);
   font-weight: 900;
 }
 
 .topbar h1 {
   margin: 0;
   text-align: center;
-  font-size: 34px;
+  font-size: clamp(22px, 4.2vw, 34px);
   font-weight: 900;
 }
 
-/* 전체 레이아웃 */
+/* 핵심: 전체 높이를 4등분 고정하지 않고, 남는 공간을 자동 배분 */
 .aacLayout {
-  height: calc(100vh - 76px);
+  height: calc(100dvh - var(--top-h));
   display: grid;
-  grid-template-rows: 62px 42vh minmax(185px, 1fr) 88px;
-  gap: 8px;
-  padding: 10px 16px 0;
+  grid-template-rows:
+    var(--search-h)
+    minmax(210px, 42fr)
+    minmax(150px, 32fr)
+    var(--cat-h);
+  gap: var(--gap);
+  padding: var(--gap) var(--side-pad) 0;
+  overflow: hidden;
 }
 
 /* 검색 */
 .searchPanel {
   display: grid;
-  grid-template-columns: 58px 1fr 58px;
-  gap: 12px;
+  grid-template-columns: var(--search-h) 1fr var(--search-h);
+  gap: clamp(6px, 1.2vw, 12px);
   align-items: center;
+  min-height: 0;
 }
 
 .searchIcon,
 .micBtn {
-  width: 58px;
-  height: 54px;
+  width: var(--search-h);
+  height: var(--search-h);
   display: grid;
   place-items: center;
-  border-radius: 16px;
+  border-radius: clamp(12px, 2vw, 16px);
   background: #fff;
   border: 2px solid #f0d98e;
-  font-size: 28px;
+  font-size: clamp(22px, 4vw, 28px);
 }
 
 .micBtn.listening {
@@ -93,47 +120,52 @@ button {
 }
 
 .searchPanel input {
-  height: 54px;
+  height: var(--search-h);
   min-width: 0;
-  padding: 0 18px;
-  font-size: 24px;
-  border-radius: 16px;
-  border: 2px solid #eadca4;
+  padding: 0 clamp(12px, 2vw, 18px);
+  font-size: clamp(18px, 3.3vw, 24px);
+  border-radius: clamp(12px, 2vw, 16px);
+  border: 2px solid var(--line-yellow);
   background: #fff;
 }
 
 /* 문장 만들기 */
 .sentencePanel {
   position: relative;
+  min-height: 0;
   overflow: hidden;
   background: #fff;
-  border: 3px dashed #eadca4;
-  border-radius: 28px;
-  padding: 72px 26px 50px;
+  border: 3px dashed var(--line-yellow);
+  border-radius: clamp(18px, 3vw, 28px);
+  padding:
+    clamp(48px, 7vh, 72px)
+    clamp(12px, 2.5vw, 26px)
+    clamp(38px, 6vh, 50px);
 }
 
 .clearSentenceBtn {
   position: absolute;
-  top: 18px;
-  right: 22px;
-  padding: 12px 22px;
+  top: clamp(10px, 2vh, 18px);
+  right: clamp(12px, 2.5vw, 22px);
+  padding: clamp(8px, 1.5vh, 12px) clamp(14px, 2.5vw, 22px);
   border-radius: 20px;
   background: #efefef;
-  font-size: 20px;
+  font-size: clamp(15px, 2.6vw, 20px);
   font-weight: 800;
+  z-index: 3;
 }
 
 .sentenceCanvas {
   height: 100%;
   width: 100%;
   display: flex;
-  gap: 22px;
+  gap: clamp(12px, 2vw, 22px);
   align-items: center;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
-  padding: 0 0 6px;
+  padding: 0 0 4px;
 }
 
 .sentenceCanvas::-webkit-scrollbar,
@@ -146,23 +178,27 @@ button {
   width: 100%;
   text-align: center;
   color: #9a9a9a;
-  font-size: 32px;
+  font-size: clamp(22px, 4vw, 32px);
   font-weight: 900;
   line-height: 1.45;
 }
 
 .sentenceChip {
   position: relative;
-  flex: 0 0 300px;
-  width: 300px;
-  height: 310px;
+  flex: 0 0 var(--sentence-card-w);
+  width: var(--sentence-card-w);
+  height: min(var(--sentence-card-h), 100%);
+  max-height: 100%;
   scroll-snap-align: start;
-  border-radius: 24px;
+  border-radius: clamp(18px, 3vw, 24px);
   background: #fffdf8;
   border: 3px solid #f1d26f;
-  padding: 16px 16px 18px;
+  padding: clamp(8px, 1.5vh, 16px);
   display: grid;
-  grid-template-rows: 34px 1fr 56px;
+  grid-template-rows:
+    clamp(22px, 4vh, 34px)
+    minmax(0, 1fr)
+    clamp(36px, 6vh, 56px);
   align-items: center;
   justify-items: center;
   overflow: hidden;
@@ -170,26 +206,32 @@ button {
 
 .removeChip {
   position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
+  top: clamp(4px, 1vh, 10px);
+  right: clamp(6px, 1.2vw, 12px);
+  width: clamp(28px, 5vw, 36px);
+  height: clamp(28px, 5vw, 36px);
   background: transparent;
   color: #e12626;
-  font-size: 36px;
+  font-size: clamp(28px, 5vw, 36px);
   line-height: 1;
   font-weight: 900;
+  z-index: 2;
 }
 
 .sentenceSpeak {
-  font-size: 18px;
+  font-size: clamp(13px, 2.2vw, 18px);
   font-weight: 800;
   align-self: start;
+  white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sentenceImageBox {
   width: 100%;
   height: 100%;
+  min-height: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -199,25 +241,27 @@ button {
 .sentenceImageBox .noImage {
   width: 100%;
   height: 100%;
+  max-height: var(--sentence-img-h);
   object-fit: contain;
   object-position: center center;
   display: block;
 }
 
 .sentenceLabel {
-  font-size: 38px;
+  font-size: clamp(26px, 5vw, 38px);
   font-weight: 900;
   line-height: 1.05;
   text-align: center;
+  max-width: 100%;
 }
 
 .sentenceText {
   position: absolute;
-  left: 120px;
-  right: 120px;
-  bottom: 14px;
-  height: 34px;
-  font-size: 28px;
+  left: clamp(60px, 12vw, 120px);
+  right: clamp(60px, 12vw, 120px);
+  bottom: clamp(8px, 1.6vh, 14px);
+  height: clamp(26px, 4.5vh, 34px);
+  font-size: clamp(20px, 3.8vw, 28px);
   font-weight: 900;
   color: #555;
   text-align: center;
@@ -230,52 +274,63 @@ button {
 .cardsPanel {
   min-height: 0;
   display: grid;
-  grid-template-rows: 1fr 26px;
-  gap: 4px;
+  grid-template-rows: minmax(0, 1fr) clamp(18px, 3.5vh, 26px);
+  gap: 2px;
   background: #fffaf0;
+  overflow: hidden;
 }
 
 .cardScroller {
   min-height: 0;
   display: flex;
-  gap: 18px;
+  align-items: center;
+  gap: clamp(10px, 2vw, 18px);
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
-  padding: 8px 2px 4px;
+  padding: 4px 2px;
 }
 
 .card {
-  flex: 0 0 180px;
-  width: 180px;
-  height: 210px;
+  flex: 0 0 var(--choice-card-w);
+  width: var(--choice-card-w);
+  height: min(var(--choice-card-h), 100%);
+  max-height: 100%;
   scroll-snap-align: start;
-  border-radius: 20px;
+  border-radius: clamp(14px, 2.6vw, 20px);
   background: #fff;
   border: 2px solid #e4e4e4;
   display: grid;
-  grid-template-rows: 28px 1fr 52px;
+  grid-template-rows:
+    clamp(18px, 3.2vh, 28px)
+    minmax(0, 1fr)
+    clamp(38px, 6vh, 52px);
   align-items: center;
   justify-items: center;
-  padding: 8px;
+  padding: clamp(5px, 1vh, 8px);
   overflow: hidden;
   box-shadow: 0 1px 8px rgba(0,0,0,.04);
 }
 
 .card.selectedCard {
-  border: 3px solid #A6A6A6;
+  border: 3px solid var(--select-gray);
 }
 
 .cardSpeak {
-  font-size: 14px;
+  font-size: clamp(10px, 1.8vw, 14px);
   font-weight: 800;
   line-height: 1;
+  white-space: nowrap;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cardImageBox {
   width: 100%;
   height: 100%;
+  min-height: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -285,16 +340,18 @@ button {
 .cardImageBox .noImage {
   width: 100%;
   height: 100%;
+  max-height: var(--choice-img-h);
   object-fit: contain;
   object-position: center center;
   display: block;
 }
 
 .card .label {
-  font-size: 26px;
+  font-size: clamp(18px, 3.6vw, 26px);
   font-weight: 900;
   line-height: 1.08;
   text-align: center;
+  max-width: 100%;
 }
 
 .cardsEmpty {
@@ -306,7 +363,7 @@ button {
   padding: 20px;
   background: #fffaf0;
   color: #8b8b8b;
-  font-size: 18px;
+  font-size: clamp(14px, 2.5vw, 18px);
   font-weight: 700;
   text-align: center;
   white-space: pre-line;
@@ -314,16 +371,16 @@ button {
 
 /* 페이지 점 */
 .pageDots {
-  height: 26px;
+  height: clamp(18px, 3.5vh, 26px);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: clamp(5px, 1vw, 8px);
 }
 
 .dot {
-  width: 17px;
-  height: 17px;
+  width: clamp(10px, 2.2vw, 17px);
+  height: clamp(10px, 2.2vw, 17px);
   border-radius: 50%;
   background: #e4e4e4;
 }
@@ -334,36 +391,37 @@ button {
 
 .dotArrow {
   color: #d0d0d0;
-  font-size: 38px;
+  font-size: clamp(24px, 5vw, 38px);
   line-height: 1;
   font-weight: 900;
 }
 
 /* 하단 카테고리 */
 .categoryBar {
-  height: 88px;
+  height: var(--cat-h);
   display: flex;
-  gap: 10px;
+  gap: clamp(7px, 1.4vw, 10px);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 8px 4px;
-  background: #fff7d6;
-  border: 2px solid #eadca4;
+  padding: clamp(6px, 1.1vh, 8px) 4px;
+  background: var(--soft-yellow);
+  border: 2px solid var(--line-yellow);
   border-bottom: 0;
   border-radius: 18px 18px 0 0;
 }
 
 .catTab {
-  flex: 0 0 106px;
-  height: 70px;
+  flex: 0 0 clamp(82px, 15vw, 106px);
+  height: calc(var(--cat-h) - 18px);
+  min-height: 56px;
   border-radius: 18px;
   background: #fff;
   border: 2px solid #ddd;
   display: grid;
-  grid-template-rows: 32px 28px;
+  grid-template-rows: 1fr 1fr;
   align-items: center;
   justify-items: center;
-  font-size: 21px;
+  font-size: clamp(16px, 3vw, 21px);
   font-weight: 900;
 }
 
@@ -373,7 +431,7 @@ button {
 }
 
 .catIcon {
-  font-size: 28px;
+  font-size: clamp(22px, 4vw, 28px);
   line-height: 1;
 }
 
@@ -491,134 +549,79 @@ hr {
   min-height: 80px;
 }
 
-/* 휴대폰 세로 */
-@media (max-width: 520px) {
-  .topbar {
-    height: 72px;
-    grid-template-columns: 58px 1fr 58px;
-    padding: 9px 14px;
-  }
-
-  .hamburger,
-  .topSpacer {
-    width: 54px;
-    height: 50px;
-  }
-
-  .topbar h1 {
-    font-size: 30px;
+/* 태블릿 세로처럼 폭은 좁고 높이가 긴 화면 */
+@media (max-aspect-ratio: 3/4) {
+  :root {
+    --sentence-card-w: clamp(150px, 34vw, 230px);
+    --sentence-card-h: clamp(180px, 28vh, 270px);
+    --choice-card-w: clamp(118px, 23vw, 160px);
+    --choice-card-h: clamp(148px, 21vh, 190px);
   }
 
   .aacLayout {
-    height: calc(100vh - 72px);
-    grid-template-rows: 58px 42vh minmax(170px, 1fr) 84px;
-    padding: 8px 12px 0;
-  }
-
-  .searchPanel {
-    grid-template-columns: 52px 1fr 52px;
-    gap: 8px;
-  }
-
-  .searchIcon,
-  .micBtn,
-  .searchPanel input {
-    height: 50px;
-  }
-
-  .searchIcon,
-  .micBtn {
-    width: 52px;
-    font-size: 25px;
-  }
-
-  .searchPanel input {
-    font-size: 20px;
+    grid-template-rows:
+      var(--search-h)
+      minmax(210px, 38fr)
+      minmax(180px, 38fr)
+      var(--cat-h);
   }
 
   .sentencePanel {
-    padding: 64px 18px 46px;
-  }
-
-  .clearSentenceBtn {
-    top: 16px;
-    right: 18px;
-    font-size: 18px;
-    padding: 10px 18px;
-  }
-
-  .sentenceChip {
-    flex-basis: 225px;
-    width: 225px;
-    height: 260px;
-    grid-template-rows: 30px 1fr 50px;
-  }
-
-  .sentenceSpeak {
-    font-size: 16px;
-  }
-
-  .sentenceLabel {
-    font-size: 33px;
-  }
-
-  .sentenceText {
-    left: 80px;
-    right: 80px;
-    bottom: 12px;
-    font-size: 25px;
-  }
-
-  .card {
-    flex-basis: 160px;
-    width: 160px;
-    height: 192px;
-    grid-template-rows: 26px 1fr 48px;
-  }
-
-  .card .label {
-    font-size: 24px;
-  }
-
-  .categoryBar {
-    height: 84px;
-  }
-
-  .catTab {
-    flex-basis: 96px;
-    height: 66px;
-    font-size: 19px;
+    padding-top: clamp(48px, 6vh, 60px);
   }
 }
 
-/* 작은 휴대폰 */
-@media (max-width: 390px) {
+/* 노트북처럼 높이가 낮은 화면 */
+@media (max-height: 720px) {
+  :root {
+    --top-h: 54px;
+    --search-h: 40px;
+    --cat-h: 62px;
+    --sentence-card-w: clamp(130px, 20vw, 230px);
+    --sentence-card-h: clamp(150px, 28vh, 230px);
+    --choice-card-w: clamp(110px, 15vw, 160px);
+    --choice-card-h: clamp(120px, 22vh, 170px);
+  }
+
+  .topbar h1 {
+    font-size: clamp(20px, 3vw, 28px);
+  }
+
   .aacLayout {
-    grid-template-rows: 56px 40vh minmax(160px, 1fr) 82px;
+    grid-template-rows:
+      var(--search-h)
+      minmax(160px, 38fr)
+      minmax(120px, 31fr)
+      var(--cat-h);
+    gap: 5px;
   }
 
-  .sentenceChip {
-    flex-basis: 195px;
-    width: 195px;
-    height: 225px;
+  .sentencePanel {
+    padding-top: 42px;
+    padding-bottom: 32px;
   }
 
-  .sentenceLabel {
-    font-size: 30px;
+  .clearSentenceBtn {
+    top: 8px;
+    padding: 7px 14px;
   }
 
-  .card {
-    flex-basis: 140px;
-    width: 140px;
-    height: 170px;
-  }
-
-  .card .label {
-    font-size: 21px;
+  .sentenceText {
+    bottom: 5px;
+    font-size: clamp(16px, 2.6vw, 22px);
   }
 
   .catTab {
-    flex-basis: 88px;
-    font-size: 18px;
+    border-radius: 14px;
+  }
+}
+
+/* 매우 작은 휴대폰 */
+@media (max-width: 390px) {
+  :root {
+    --sentence-card-w: 180px;
+    --sentence-card-h: 220px;
+    --choice-card-w: 128px;
+    --choice-card-h: 160px;
   }
 }
