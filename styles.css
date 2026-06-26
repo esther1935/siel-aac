@@ -9,7 +9,7 @@ body {
 .topbar {
   height: 70px;
   display: grid;
-  grid-template-columns: 62px 1fr 92px;
+  grid-template-columns: 62px 1fr 62px;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
@@ -31,7 +31,7 @@ button {
 .aacLayout {
   height: calc(100vh - 70px);
   display: grid;
-  grid-template-rows: auto auto 30vh 1fr 82px;
+  grid-template-rows: auto 36vh 1fr 82px;
   gap: 9px;
   padding: 9px;
 }
@@ -44,8 +44,9 @@ button {
 }
 .searchPanel {
   display: grid;
-  grid-template-columns: 1fr 56px 80px;
+  grid-template-columns: 44px 1fr 56px;
   gap: 8px;
+  align-items: center;
 }
 .searchPanel input {
   font-size: 18px;
@@ -315,7 +316,7 @@ hr { width: 100%; border: 0; border-top: 1px solid #eee; margin: 12px 0; }
   .topbar { height: 76px; }
   .aacLayout {
     height: calc(100vh - 76px);
-    grid-template-rows: auto auto 34vh 1fr 94px;
+    grid-template-rows: auto 38vh 1fr 94px;
   }
   .sentenceChip { flex-basis: 150px; height: 155px; }
   .sentenceChip img, .miniNoImage { width: 108px; height: 88px; }
@@ -325,4 +326,45 @@ hr { width: 100%; border: 0; border-top: 1px solid #eee; margin: 12px 0; }
   .card .label { font-size: 26px; }
   .catTab { min-width: 104px; font-size: 18px; }
   .catIcon { font-size: 26px; }
+}
+
+/* V2 fix1 */
+.status { display: none !important; }
+.searchIcon {
+  display: grid;
+  place-items: center;
+  height: 48px;
+  border-radius: 16px;
+  background: #fff7d6;
+  border: 2px solid #eadca4;
+  font-size: 22px;
+}
+
+.micBtn {
+  height: 48px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #fff;
+  border: 2px solid #eadca4;
+  font-size: 23px;
+}
+.micBtn.listening {
+  background: #ffd166;
+  border-color: #d8a934;
+}
+
+/* V3 final: 관리 버튼 삭제, 메뉴 하나로 통합 */
+.topbar::after {
+  content: "";
+  width: 62px;
+  height: 1px;
+}
+.topbar h1 {
+  text-align: center;
+}
+
+.sentenceEmpty {
+  line-height: 1.45;
 }

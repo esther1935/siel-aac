@@ -10,6 +10,11 @@ let db = null;
 
 const $ = (id) => document.getElementById(id);
 
+function setStatus(message) {
+  const el = $("statusBar");
+  if (el) el.textContent = message;
+}
+
 const categoryIcons = {
   "전체": "🌈",
   "마이크": "🎤",
@@ -105,7 +110,7 @@ function renderSentence() {
   if (sentenceCards.length === 0) {
     const empty = document.createElement("div");
     empty.className = "sentenceEmpty";
-    empty.textContent = "그림을 누르면 여기에 문장이 만들어져요";
+    empty.innerHTML = "👇<br>그림을 눌러<br>문장을 만들어 보세요";
     area.appendChild(empty);
     sentenceText.textContent = "";
     return;
@@ -138,6 +143,9 @@ function renderCategoryBar() {
   all.innerHTML = `<span class="catIcon">🌈</span><span>전체</span>`;
   all.onclick = () => {
     selectedCategoryId = "all";
+    searchTerm = "";
+    const input = $("searchInput");
+    if (input) input.value = "";
     render();
   };
   bar.appendChild(all);
@@ -149,6 +157,9 @@ function renderCategoryBar() {
     btn.innerHTML = `<span class="catIcon">${escapeHtml(icon)}</span><span>${escapeHtml(cat.name)}</span>`;
     btn.onclick = () => {
       selectedCategoryId = cat.id;
+      searchTerm = "";
+      const input = $("searchInput");
+      if (input) input.value = "";
       render();
     };
     bar.appendChild(btn);
@@ -356,8 +367,8 @@ function openAdminTab(tab) {
   $("boardPanel").classList.toggle("hidden", tab !== "board");
 }
 
-$("adminBtn").onclick = () => $("adminDialog").showModal();
-$("menuBtn").onclick = () => $("adminDialog").showModal();
+const menuBtn = $("menuBtn");
+if (menuBtn) menuBtn.onclick = () => $("adminDialog").showModal();
 $("showUploadBtn").onclick = () => openAdminTab("upload");
 $("showBoardBtn").onclick = () => openAdminTab("board");
 
@@ -396,7 +407,7 @@ $("addCardBtn").onclick = async () => {
 
   try {
     if (file) {
-      $("statusBar").textContent = "그림을 압축하고 클라우드에 저장하는 중...";
+      setStatus("그림을 압축하고 클라우드에 저장하는 중...");
       const uploaded = await uploadImageToStorageIfReady(file, cardId);
       image = uploaded.image;
       storagePath = uploaded.storagePath || "";
@@ -408,10 +419,10 @@ $("addCardBtn").onclick = async () => {
     $("imageInput").value = "";
     selectedCategoryId = cat.id;
     saveData();
-    $("statusBar").textContent = storagePath ? "그림이 클라우드에 저장되었어요." : "그림이 기기 안에 저장되었어요.";
+    setStatus(storagePath ? "그림이 클라우드에 저장되었어요." : "그림이 기기 안에 저장되었어요.");
   } catch (e) {
     console.error(e);
-    $("statusBar").textContent = "그림 저장 중 오류가 났어요.";
+    setStatus("그림 저장 중 오류가 났어요.");
     alert("그림 저장 중 오류가 났어요. Firebase Storage 규칙을 확인해 주세요.");
   }
 };
@@ -419,7 +430,7 @@ $("addCardBtn").onclick = async () => {
 $("saveBoardBtn").onclick = () => {
   data.board = $("boardText").value.trim();
   saveData();
-  $("statusBar").textContent = "게시판이 저장되었어요.";
+  setStatus("게시판이 저장되었어요.");
 };
 
 $("clearSentenceBtn").onclick = () => {
@@ -432,30 +443,60 @@ $("searchInput").oninput = (e) => {
   renderCards();
 };
 
-$("clearSearchBtn").onclick = () => {
-  searchTerm = "";
-  $("searchInput").value = "";
-  renderCards();
-};
 
-$("voiceSearchBtn").onclick = () => {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    alert("이 기기에서는 음성검색을 지원하지 않아요.");
-    return;
-  }
-  const rec = new SpeechRecognition();
-  rec.lang = "ko-KR";
-  rec.interimResults = false;
-  rec.maxAlternatives = 1;
-  rec.onresult = (event) => {
-    const text = event.results[0][0].transcript.trim();
-    searchTerm = text;
-    $("searchInput").value = text;
-    renderCards();
+const voiceBtn = $("voiceSearchBtn");
+if (voiceBtn) {
+  voiceBtn.onclick = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("이 브라우저에서는 음성검색을 지원하지 않아요. Chrome에서 열어주세요.");
+      return;
+    }
+
+    try {
+      const rec = new SpeechRecognition();
+      rec.lang = "ko-KR";
+      rec.interimResults = false;
+      rec.continuous = false;
+      rec.maxAlternatives = 1;
+
+      voiceBtn.classList.add("listening");
+      voiceBtn.textContent = "🎙️";
+
+      rec.onresult = (event) => {
+        const spoken = event.results?.[0]?.[0]?.transcript || "";
+        const text = spoken.trim().replace(/[.!?。]/g, "");
+        searchTerm = text;
+        const input = $("searchInput");
+        if (input) input.value = text;
+        renderCards();
+      };
+
+      rec.onerror = (event) => {
+        console.warn("음성검색 오류:", event.error);
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          alert("마이크 권한이 필요해요. 브라우저 주소창의 자물쇠에서 마이크 권한을 허용해 주세요.");
+        } else if (event.error === "no-speech") {
+          alert("소리가 잘 들리지 않았어요. 다시 눌러 말해 주세요.");
+        } else {
+          alert("음성검색을 시작하지 못했어요. Chrome에서 다시 시도해 주세요.");
+        }
+      };
+
+      rec.onend = () => {
+        voiceBtn.classList.remove("listening");
+        voiceBtn.textContent = "🎤";
+      };
+
+      rec.start();
+    } catch (e) {
+      console.error(e);
+      voiceBtn.classList.remove("listening");
+      voiceBtn.textContent = "🎤";
+      alert("음성검색을 시작하지 못했어요. Chrome에서 다시 시도해 주세요.");
+    }
   };
-  rec.start();
-};
+}
 
 $("exportBtn").onclick = () => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -481,17 +522,17 @@ $("importInput").onchange = async (e) => {
 };
 
 window.addEventListener("online", () => {
-  $("statusBar").textContent = "와이파이 연결됨: 업데이트를 확인할 수 있어요.";
+  setStatus("와이파이 연결됨: 업데이트를 확인할 수 있어요.");
   initFirebase();
 });
 
 window.addEventListener("offline", () => {
-  $("statusBar").textContent = "오프라인 모드: 저장된 그림으로 사용할 수 있어요.";
+  setStatus("오프라인 모드: 저장된 그림으로 사용할 수 있어요.");
 });
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=v2sentence20260625");
+    const configModule = await import("./firebase-config.js?v=v3final_20260625");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -515,7 +556,7 @@ async function initFirebase() {
     onSnapshot(ref, async (snap) => {
       if (!snap.exists()) {
         await uploadToCloudIfReady();
-        $("statusBar").textContent = "동기화 준비 완료";
+        setStatus("동기화 준비 완료");
         return;
       }
 
@@ -525,17 +566,17 @@ async function initFirebase() {
         data = cloud;
         saveLocalOnly();
         render();
-        $("statusBar").textContent = "클라우드 데이터 반영 완료";
+        setStatus("클라우드 데이터 반영 완료");
       } else {
-        $("statusBar").textContent = "동기화 준비 완료";
+        setStatus("동기화 준비 완료");
       }
     }, (error) => {
       console.error("Firestore 읽기 실패:", error);
-      $("statusBar").textContent = "기기 안 저장 모드";
+      setStatus("기기 안 저장 모드");
     });
   } catch (e) {
     console.error("Firebase 초기화 실패:", e);
-    $("statusBar").textContent = "기기 안 저장 모드";
+    setStatus("기기 안 저장 모드");
   }
 }
 
