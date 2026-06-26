@@ -533,7 +533,7 @@ window.addEventListener("offline", () => {
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=v3fixsearch_20260625");
+    const configModule = await import("./firebase-config.js?v=v3ratiofix_20260625");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");

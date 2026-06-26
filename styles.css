@@ -395,3 +395,317 @@ hr { width: 100%; border: 0; border-top: 1px solid #eee; margin: 12px 0; }
 .cardScrollerWrap {
   background: #fffaf0 !important;
 }
+
+
+/* V3 ratio fix: 문장 카드 크게, 아래 선택 카드 안정적으로 작게 */
+.aacLayout {
+  grid-template-rows: auto 40vh 1fr 82px !important;
+}
+
+.sentencePanel {
+  padding: 12px !important;
+}
+
+.sentenceCanvas {
+  height: calc(100% - 58px) !important;
+  gap: 18px !important;
+  padding: 8px 0 !important;
+}
+
+.sentenceChip {
+  flex: 0 0 190px !important;
+  height: 220px !important;
+  border-radius: 26px !important;
+  border: 3px solid #e7d58e !important;
+  background: #fffdf5 !important;
+}
+
+.sentenceChip img,
+.sentenceChip .miniNoImage {
+  width: 145px !important;
+  height: 132px !important;
+  object-fit: contain !important;
+}
+
+.sentenceChip span {
+  font-size: 30px !important;
+  line-height: 1.08 !important;
+  font-weight: 900 !important;
+}
+
+.sentenceChip b {
+  top: 6px !important;
+  right: 10px !important;
+  font-size: 32px !important;
+  color: #c33 !important;
+}
+
+.sentenceText {
+  height: 32px !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  color: #555 !important;
+}
+
+.sentenceTop {
+  height: 38px !important;
+}
+
+.sentenceTop button {
+  font-size: 18px !important;
+  padding: 9px 14px !important;
+  border-radius: 18px !important;
+}
+
+.sentenceEmpty {
+  font-size: 28px !important;
+  line-height: 1.45 !important;
+}
+
+/* 아래 카드들은 문장 카드보다 작게 */
+.card {
+  flex: 0 0 150px !important;
+  height: 178px !important;
+  border-radius: 22px !important;
+}
+
+.card img,
+.card .noImage {
+  height: 108px !important;
+}
+
+.card .label {
+  min-height: 58px !important;
+  font-size: 22px !important;
+  line-height: 1.12 !important;
+}
+
+.cardScroller {
+  gap: 14px !important;
+  padding: 8px 4px 14px !important;
+}
+
+@media (min-width: 800px) {
+  .aacLayout {
+    grid-template-rows: auto 42vh 1fr 94px !important;
+  }
+
+  .sentenceChip {
+    flex-basis: 230px !important;
+    height: 260px !important;
+  }
+
+  .sentenceChip img,
+  .sentenceChip .miniNoImage {
+    width: 176px !important;
+    height: 156px !important;
+  }
+
+  .sentenceChip span {
+    font-size: 34px !important;
+  }
+
+  .sentenceText {
+    font-size: 28px !important;
+  }
+
+  .card {
+    flex-basis: 180px !important;
+    height: 210px !important;
+  }
+
+  .card img,
+  .card .noImage {
+    height: 132px !important;
+  }
+
+  .card .label {
+    font-size: 26px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .aacLayout {
+    grid-template-rows: auto 38vh 1fr 82px !important;
+  }
+
+  .sentenceChip {
+    flex-basis: 155px !important;
+    height: 185px !important;
+  }
+
+  .sentenceChip img,
+  .sentenceChip .miniNoImage {
+    width: 116px !important;
+    height: 102px !important;
+  }
+
+  .sentenceChip span {
+    font-size: 25px !important;
+  }
+
+  .card {
+    flex-basis: 132px !important;
+    height: 162px !important;
+  }
+
+  .card img,
+  .card .noImage {
+    height: 96px !important;
+  }
+
+  .card .label {
+    font-size: 20px !important;
+  }
+}
+
+
+/* V3 big sentence fix: 문장칸 선택 그림을 확실히 크게 표시 */
+.aacLayout {
+  grid-template-rows: auto 43vh 1fr 82px !important;
+}
+
+.sentencePanel {
+  padding: 14px 18px !important;
+}
+
+.sentenceTop {
+  height: 38px !important;
+}
+
+#sentenceCanvas.sentenceCanvas {
+  height: calc(100% - 66px) !important;
+  align-items: center !important;
+  gap: 22px !important;
+  padding: 10px 0 !important;
+}
+
+#sentenceCanvas .sentenceChip {
+  flex: 0 0 245px !important;
+  width: 245px !important;
+  height: 280px !important;
+  border-radius: 28px !important;
+  border: 4px solid #e7d58e !important;
+  background: #fffdf5 !important;
+  padding: 14px !important;
+  justify-content: center !important;
+}
+
+#sentenceCanvas .sentenceChip img,
+#sentenceCanvas .sentenceChip .miniNoImage {
+  width: 205px !important;
+  height: 175px !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+#sentenceCanvas .sentenceChip span {
+  font-size: 36px !important;
+  line-height: 1.06 !important;
+  font-weight: 900 !important;
+  text-align: center !important;
+}
+
+#sentenceCanvas .sentenceChip b {
+  top: 8px !important;
+  right: 12px !important;
+  font-size: 36px !important;
+  line-height: 1 !important;
+  color: #c33 !important;
+}
+
+.sentenceText {
+  height: 34px !important;
+  font-size: 28px !important;
+}
+
+/* 아래 선택 카드: 문장 카드와 구분되도록 조금 작게 */
+#cardScroller .card {
+  flex: 0 0 165px !important;
+  width: 165px !important;
+  height: 198px !important;
+}
+
+#cardScroller .card img,
+#cardScroller .card .noImage {
+  height: 124px !important;
+}
+
+#cardScroller .card .label {
+  font-size: 24px !important;
+  min-height: 62px !important;
+}
+
+@media (min-width: 800px) {
+  .aacLayout {
+    grid-template-rows: auto 45vh 1fr 94px !important;
+  }
+
+  #sentenceCanvas .sentenceChip {
+    flex-basis: 300px !important;
+    width: 300px !important;
+    height: 330px !important;
+  }
+
+  #sentenceCanvas .sentenceChip img,
+  #sentenceCanvas .sentenceChip .miniNoImage {
+    width: 245px !important;
+    height: 215px !important;
+  }
+
+  #sentenceCanvas .sentenceChip span {
+    font-size: 42px !important;
+  }
+
+  #cardScroller .card {
+    flex-basis: 185px !important;
+    width: 185px !important;
+    height: 215px !important;
+  }
+
+  #cardScroller .card img,
+  #cardScroller .card .noImage {
+    height: 132px !important;
+  }
+
+  #cardScroller .card .label {
+    font-size: 26px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .aacLayout {
+    grid-template-rows: auto 40vh 1fr 82px !important;
+  }
+
+  #sentenceCanvas .sentenceChip {
+    flex-basis: 190px !important;
+    width: 190px !important;
+    height: 225px !important;
+  }
+
+  #sentenceCanvas .sentenceChip img,
+  #sentenceCanvas .sentenceChip .miniNoImage {
+    width: 150px !important;
+    height: 130px !important;
+  }
+
+  #sentenceCanvas .sentenceChip span {
+    font-size: 30px !important;
+  }
+
+  #cardScroller .card {
+    flex-basis: 135px !important;
+    width: 135px !important;
+    height: 165px !important;
+  }
+
+  #cardScroller .card img,
+  #cardScroller .card .noImage {
+    height: 96px !important;
+  }
+
+  #cardScroller .card .label {
+    font-size: 20px !important;
+  }
+}
