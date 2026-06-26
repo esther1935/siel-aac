@@ -6,94 +6,64 @@
   <meta name="theme-color" content="#fff7d6" />
   <title>시엘 AAC</title>
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=cleanCarousel20260626" />
+  <link rel="stylesheet" href="./styles.css?v=layoutlock20260626" />
 </head>
 <body>
   <div id="app">
     <header class="topbar">
-      <button id="menuBtn" class="hamburger" type="button">☰</button>
       <h1>시엘 AAC</h1>
-      <div class="topSpacer"></div>
+      <button id="adminBtn" class="ghost">관리</button>
     </header>
 
     <main class="aacLayout">
-      <section class="searchPanel">
-        <span class="searchIcon">🔍</span>
-        <input id="searchInput" type="search" placeholder="그림 검색 (전체 검색)" />
-        <button id="voiceSearchBtn" class="micBtn" type="button" title="음성검색">🎤</button>
-      </section>
-
+      <section id="statusBar" class="status">오프라인에서도 사용할 수 있어요.</section>
       <section class="sentencePanel">
-        <button id="clearSentenceBtn" class="clearSentenceBtn" type="button">모두 지우기</button>
         <div id="sentenceCanvas" class="sentenceCanvas"></div>
-        <div id="sentenceText" class="sentenceText"></div>
+        <div id="sentenceText" class="sentenceText" aria-live="polite"></div>
       </section>
-
-      <section class="cardsPanel">
+      <section class="cardScrollerWrap">
         <div id="cardScroller" class="cardScroller"></div>
-        <div id="pageDots" class="pageDots"></div>
       </section>
-
       <nav id="categoryBar" class="categoryBar"></nav>
     </main>
 
     <dialog id="adminDialog">
       <form method="dialog" class="adminBox">
         <button class="close">×</button>
-        <h2>시엘 AAC 메뉴</h2>
-
-        <div class="adminMenu">
-          <button id="showUploadBtn" class="primary" type="button">그림 업로드</button>
-          <button id="showBoardBtn" type="button">시엘 게시판</button>
-        </div>
-
+        <h2>엄마 관리</h2>
         <input id="pinInput" type="password" inputmode="numeric" placeholder="관리 PIN 입력" />
         <button id="loginBtn" class="primary" type="button">관리 시작</button>
 
         <div id="adminPanel" class="hidden">
-          <section id="uploadPanel">
-            <label>카테고리</label>
-            <select id="categorySelect"></select>
-            <input id="newCategory" placeholder="새 카테고리 이름 예: 늘봄" />
-            <button id="addCategoryBtn" type="button">카테고리 추가</button>
-
-            <hr />
-
-            <label>그림 이름</label>
-            <input id="cardText" placeholder="예: 귤" />
-
-            <label>소리 문장</label>
-            <input id="cardSpeak" placeholder="예: 귤 먹어요" />
-
-            <label>그림 추가</label>
-            <input id="imageInput" type="file" accept="image/*" />
-
-            <button id="addCardBtn" class="primary" type="button">그림 추가</button>
-
-            <hr />
-
-            <h3>현재 그림 삭제</h3>
-            <div id="deleteList" class="deleteList"></div>
-          </section>
-
-          <section id="boardPanel" class="hidden">
-            <h3>시엘 게시판</h3>
-            <textarea id="boardText" placeholder="예: 오늘 시엘이가 '귤 먹어요'를 자주 눌렀어요."></textarea>
-            <button id="saveBoardBtn" class="primary" type="button">게시판 저장</button>
-            <div id="boardView" class="boardView"></div>
-          </section>
-
+          <label>카테고리</label>
+          <select id="categorySelect"></select>
+          <input id="newCategory" placeholder="새 카테고리 이름 예: 늘봄" />
+          <button id="addCategoryBtn" type="button">카테고리 추가</button>
           <hr />
-
+          <label>그림 이름</label>
+          <input id="cardText" placeholder="예: 귤" />
+          <label>소리 문장</label>
+          <input id="cardSpeak" placeholder="예: 귤 먹어요" />
+          <label>그림 추가</label>
+          <input id="imageInput" type="file" accept="image/*" />
+          <button id="addCardBtn" class="primary" type="button">그림 추가</button>
+          <hr />
+          <h3>현재 그림 삭제</h3>
+          <div id="deleteList" class="deleteList"></div>
+          <hr />
           <button id="exportBtn" type="button">백업 다운로드</button>
           <label class="importLabel">백업 불러오기
             <input id="importInput" type="file" accept="application/json" />
           </label>
+          <p class="help">
+            위는 문장 조합 공간, 가운데는 좌우로 넘기는 카드, 아래는 고정 카테고리입니다.
+            그림을 누르면 위에 쌓이고, 누른 순간 바로 읽어줍니다.
+          </p>
         </div>
       </form>
     </dialog>
   </div>
 
-  <script type="module" src="./app.js?v=cleanCarousel20260626"></script>
+  <script type="module" src="./app.js?v=layoutlock20260626"></script>
 </body>
 </html>
