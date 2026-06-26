@@ -694,3 +694,59 @@ hr {
   object-fit: contain !important;
   object-position: center center !important;
 }
+
+/* FINAL NAMES ONLY 20260626
+   그림에는 그림 이름만 표시합니다.
+   소리값은 화면에 표시하지 않고, 관리 저장 시 그림 이름과 동일하게 저장됩니다.
+*/
+.sentenceSpeak,
+.cardSpeak {
+  display: none !important;
+}
+
+.card {
+  grid-template-rows: minmax(0, 4.6fr) minmax(30px, 0.9fr) !important;
+}
+
+.sentenceChip {
+  grid-template-rows: minmax(0, 4.4fr) minmax(26px, 0.8fr) !important;
+}
+
+.cardImageBox,
+.sentenceImageBox {
+  padding: clamp(2px, .45vh, 6px) !important;
+}
+
+.cardImageBox img,
+.cardImageBox .noImage,
+.sentenceImageBox img,
+.sentenceImageBox .noImage {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+.card .label {
+  font-size: clamp(16px, 2.55vw, 23px) !important;
+  line-height: 1.05 !important;
+}
+
+.sentenceLabel {
+  font-size: clamp(16px, 2.1vw, 22px) !important;
+  line-height: 1.05 !important;
+}
+
+/* 관리 화면: 소리 문장은 자동으로 그림 이름과 동일 */
+label[for="cardSpeak"],
+#cardSpeak {
+  display: none !important;
+}
+
+.soundLabelHidden,
+#cardSpeak {
+  display: none !important;
+}
+.soundAutoNotice {
+  margin: 2px 0 8px;
+  color: #777;
+  font-size: 14px;
+}

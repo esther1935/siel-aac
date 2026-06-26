@@ -62,6 +62,9 @@ function loadData() {
     parsed.categories.forEach(cat => {
       if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
       if (!Array.isArray(cat.cards)) cat.cards = [];
+      cat.cards.forEach(card => {
+        card.speak = card.text || "";
+      });
     });
     return parsed;
   } catch {
@@ -73,7 +76,16 @@ function saveLocalOnly() {
   localStorage.setItem(STORE_KEY, JSON.stringify(data));
 }
 
+function normalizeSpeakValues() {
+  data.categories.forEach(cat => {
+    cat.cards.forEach(card => {
+      card.speak = card.text || "";
+    });
+  });
+}
+
 function saveData() {
+  normalizeSpeakValues();
   data.updatedAt = Date.now();
   saveLocalOnly();
   render();
@@ -125,7 +137,7 @@ function renderSentence() {
       sentenceCards.splice(index, 1);
       renderSentence();
     };
-    chip.onclick = () => speak(card.speak || card.text);
+    chip.onclick = () => speak(card.text);
     area.appendChild(chip);
   });
 
@@ -204,7 +216,7 @@ function renderCards() {
     el.type = "button";
     el.className = card.id === selectedCardId ? "card selectedCard" : "card";
     el.innerHTML = `
-      <div class="cardSpeak">${escapeHtml(card.speak || card.text)}</div>
+      <div class="cardSpeak">${escapeHtml(card.text)}</div>
       <div class="cardImageBox">
         ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
       </div>
@@ -261,12 +273,12 @@ function addToSentence(card) {
   sentenceCards.push({
     id: card.id,
     text: card.text,
-    speak: card.speak || card.text,
+    speak: card.text,
     image: card.image || ""
   });
   addRecent(card);
   renderSentence();
-  speak(card.speak || card.text);
+  speak(card.text);
 }
 
 function getRecent() {
@@ -437,7 +449,7 @@ $("addCategoryBtn").onclick = () => {
 $("addCardBtn").onclick = async () => {
   const cat = data.categories.find(c => c.id === $("categorySelect").value);
   const text = $("cardText").value.trim();
-  const speakText = $("cardSpeak").value.trim() || text;
+  const speakText = text;
   const file = $("imageInput").files[0];
 
   if (!cat || !text) {
@@ -562,7 +574,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=finalScreen20260626");
+    const configModule = await import("./firebase-config.js?v=finalNamesOnly20260626");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
