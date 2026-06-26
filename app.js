@@ -6,6 +6,7 @@ let selectedCategoryId = "all";
 let sentenceCards = [];
 let searchTerm = "";
 let selectedCardId = "";
+let editingCardId = "";
 let firebaseReady = false;
 let db = null;
 
@@ -307,29 +308,59 @@ function renderAdmin() {
 
   const del = $("deleteList");
   del.innerHTML = "";
+
   data.categories.forEach(cat => {
     cat.cards.forEach(card => {
       const row = document.createElement("div");
       row.className = "deleteItem";
       row.innerHTML = `
-        ${card.image ? `<img src="${card.image}" alt="">` : `<div></div>`}
-        <strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong>
-        <button type="button">삭제</button>
+        <div class="deleteThumb">${card.image ? `<img src="${card.image}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
+        <button class="editCardBtn" type="button"><strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong></button>
+        <button class="smallEditBtn" type="button">수정</button>
+        <button class="deleteBtn" type="button">삭제</button>
       `;
-      row.querySelector("button").onclick = async () => {
+
+      const startEdit = () => {
+        editingCardId = card.id;
+        $("categorySelect").value = cat.id;
+        $("cardText").value = card.text || "";
+        $("cardSpeak").value = card.text || "";
+        $("imageInput").value = "";
+        $("addCardBtn").textContent = "수정 저장";
+        $("cancelEditBtn").classList.remove("hidden");
+        $("editStatus").textContent = `'${card.text}' 수정 모드입니다. 이름만 바꾸거나 새 사진을 선택해 교체할 수 있습니다.`;
+        $("cardText").focus();
+      };
+
+      row.querySelector(".editCardBtn").onclick = startEdit;
+      row.querySelector(".smallEditBtn").onclick = startEdit;
+
+      row.querySelector(".deleteBtn").onclick = async () => {
         if (confirm(`'${card.text}' 그림을 삭제할까요?`)) {
           await deleteImageFromStorageIfReady(card);
           cat.cards = cat.cards.filter(c => c.id !== card.id);
           sentenceCards = sentenceCards.filter(c => c.id !== card.id);
+          if (editingCardId === card.id) resetEditMode();
           saveData();
         }
       };
+
       del.appendChild(row);
     });
   });
 
   $("boardText").value = data.board || "";
   $("boardView").textContent = data.board || "게시판 내용이 없습니다.";
+}
+
+function resetEditMode() {
+  editingCardId = "";
+  $("cardText").value = "";
+  $("cardSpeak").value = "";
+  $("imageInput").value = "";
+  $("addCardBtn").textContent = "그림 추가";
+  $("cancelEditBtn").classList.add("hidden");
+  $("editStatus").textContent = "새 그림 추가 모드입니다.";
 }
 
 function escapeHtml(s) {
@@ -425,6 +456,7 @@ function openAdminTab(tab) {
 }
 
 $("menuBtn").onclick = () => $("adminDialog").showModal();
+$("cancelEditBtn").onclick = () => resetEditMode();
 $("showUploadBtn").onclick = () => openAdminTab("upload");
 $("showBoardBtn").onclick = () => openAdminTab("board");
 
@@ -449,7 +481,6 @@ $("addCategoryBtn").onclick = () => {
 $("addCardBtn").onclick = async () => {
   const cat = data.categories.find(c => c.id === $("categorySelect").value);
   const text = $("cardText").value.trim();
-  const speakText = text;
   const file = $("imageInput").files[0];
 
   if (!cat || !text) {
@@ -457,22 +488,59 @@ $("addCardBtn").onclick = async () => {
     return;
   }
 
-  const cardId = crypto.randomUUID();
-  let image = "";
-  let storagePath = "";
-
   try {
+    if (editingCardId) {
+      const all = data.categories.flatMap(c => c.cards.map(card => ({ card, cat: c })));
+      const found = all.find(x => x.card.id === editingCardId);
+      if (!found) {
+        alert("수정할 그림을 찾지 못했어요.");
+        resetEditMode();
+        return;
+      }
+
+      const card = found.card;
+
+      if (found.cat.id !== cat.id) {
+        found.cat.cards = found.cat.cards.filter(c => c.id !== editingCardId);
+        cat.cards.push(card);
+      }
+
+      card.text = text;
+      card.speak = text;
+
+      if (file) {
+        await deleteImageFromStorageIfReady(card);
+        const uploaded = await uploadImageToStorageIfReady(file, card.id);
+        card.image = uploaded.image;
+        card.storagePath = uploaded.storagePath || "";
+      }
+
+      sentenceCards = sentenceCards.map(c => c.id === card.id ? {
+        ...c,
+        text: card.text,
+        speak: card.text,
+        image: card.image || ""
+      } : c);
+
+      selectedCategoryId = cat.id;
+      resetEditMode();
+      saveData();
+      return;
+    }
+
+    const cardId = crypto.randomUUID();
+    let image = "";
+    let storagePath = "";
+
     if (file) {
       const uploaded = await uploadImageToStorageIfReady(file, cardId);
       image = uploaded.image;
       storagePath = uploaded.storagePath || "";
     }
 
-    cat.cards.push({ id: cardId, text, speak: speakText, image, storagePath });
-    $("cardText").value = "";
-    $("cardSpeak").value = "";
-    $("imageInput").value = "";
+    cat.cards.push({ id: cardId, text, speak: text, image, storagePath });
     selectedCategoryId = cat.id;
+    resetEditMode();
     saveData();
   } catch (e) {
     console.error(e);
@@ -574,7 +642,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=finalNamesOnly20260626");
+    const configModule = await import("./firebase-config.js?v=adminFinal20260627");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
