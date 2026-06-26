@@ -168,23 +168,24 @@ function renderCategoryBar() {
 
 function getVisibleCards() {
   let cards;
-  if (selectedCategoryId === "all") {
-    cards = data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
-  } else {
-    const cat = data.categories.find(c => c.id === selectedCategoryId);
-    cards = cat ? cat.cards.map(card => ({ ...card, categoryName: cat.name })) : [];
-  }
+  const q = searchTerm.trim().toLowerCase();
 
-  if (searchTerm.trim()) {
-    const q = searchTerm.trim().toLowerCase();
-    cards = cards.filter(card =>
+  // 검색어가 있을 때는 선택된 카테고리와 상관없이 전체 카드에서 찾습니다.
+  if (q) {
+    cards = data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
+    return cards.filter(card =>
       (card.text || "").toLowerCase().includes(q) ||
       (card.speak || "").toLowerCase().includes(q) ||
       (card.categoryName || "").toLowerCase().includes(q)
     );
   }
 
-  return cards;
+  if (selectedCategoryId === "all") {
+    return data.categories.flatMap(cat => cat.cards.map(card => ({ ...card, categoryName: cat.name })));
+  }
+
+  const cat = data.categories.find(c => c.id === selectedCategoryId);
+  return cat ? cat.cards.map(card => ({ ...card, categoryName: cat.name })) : [];
 }
 
 function renderCards() {
@@ -196,7 +197,7 @@ function renderCards() {
   if (cards.length === 0) {
     const empty = document.createElement("div");
     empty.className = "cardsEmpty";
-    empty.textContent = "아직 그림이 없어요. 관리에서 그림을 추가해 주세요.";
+    empty.textContent = "아직 이 카테고리에 그림이 없어요.\n관리 메뉴에서 그림을 추가해 주세요.";
     scroller.appendChild(empty);
     return;
   }
@@ -532,7 +533,7 @@ window.addEventListener("offline", () => {
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=v3final_20260625");
+    const configModule = await import("./firebase-config.js?v=v3fixsearch_20260625");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
