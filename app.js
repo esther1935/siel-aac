@@ -101,6 +101,26 @@ function speak(text) {
   window.speechSynthesis.speak(u);
 }
 
+
+function imageDisplayUrl(card) {
+  const url = card && card.image ? String(card.image) : "";
+  if (!url || url.startsWith("data:")) return url;
+  const key = encodeURIComponent(String(card.updatedAt || card.storagePath || card.id || Date.now()));
+  return url + (url.includes("?") ? "&" : "?") + "sielImg=" + key;
+}
+function attachImageRepairHandlers() {
+  document.querySelectorAll("img[data-card-id]").forEach(img => {
+    if (img.dataset.repairAttached === "1") return;
+    img.dataset.repairAttached = "1";
+    img.addEventListener("error", () => {
+      const id = img.dataset.cardId;
+      const all = data.categories.flatMap(cat => cat.cards);
+      const card = all.find(c => c.id === id);
+      if (card && card.image) img.src = imageDisplayUrl({...card, updatedAt: Date.now()});
+    });
+  });
+}
+
 function render() {
   renderSentence();
   renderCategoryBar();
@@ -130,7 +150,7 @@ function renderSentence() {
       <div class="sentenceSpeak">${escapeHtml(card.text)}</div>
       <button class="removeChip" type="button" aria-label="삭제">×</button>
       <div class="sentenceImageBox">
-        ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
+        ${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="noImage"></div>`}
       </div>
       <div class="sentenceLabel">${escapeHtml(card.text)}</div>
     `;
@@ -220,7 +240,7 @@ function renderCards() {
     el.innerHTML = `
       <div class="cardSpeak">${escapeHtml(card.text)}</div>
       <div class="cardImageBox">
-        ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
+        ${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="noImage"></div>`}
       </div>
       <div class="label">${escapeHtml(card.text)}</div>
     `;
@@ -547,7 +567,7 @@ async function warmUpImageCache() {
     });
 
     await Promise.allSettled(urls.slice(0, 700).map(url => cacheImageUrl(url)));
-    attachImageCacheOnLoad();
+    attachImageCacheOnLoad(); attachImageRepairHandlers();
   } catch (e) {
     console.warn("이미지 오프라인 저장 실패:", e);
   }
@@ -560,7 +580,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielSyncOverwrite20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielPwaCardFixed20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -589,7 +609,7 @@ function renderAdmin() {
       const row = document.createElement("div");
       row.className = "deleteItem";
       row.innerHTML = `
-        <div class="deleteThumb">${card.image ? `<img src="${card.image}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
+        <div class="deleteThumb">${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
         <button class="editCardBtn" type="button"><strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong></button>
         <button class="smallEditBtn" type="button">수정</button>
         <button class="deleteBtn" type="button">삭제</button>
@@ -898,7 +918,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielSyncOverwrite20260628");
+    const configModule = await import("./firebase-config.js?v=sielPwaCardFixed20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
