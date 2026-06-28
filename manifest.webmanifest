@@ -1,7 +1,7 @@
 {
   "name": "시엘 AAC",
   "short_name": "시엘 AAC",
-  "start_url": "./?v=sielOfflineImageFix20260628",
+  "start_url": "./?v=sielSyncOverwrite20260628",
   "scope": "./",
   "display": "standalone",
   "background_color": "#fffaf0",

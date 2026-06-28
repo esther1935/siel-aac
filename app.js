@@ -1,7 +1,7 @@
 const ADMIN_PIN = "1208";
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
-const OFFLINE_IMAGE_CACHE = "siel-aac-image-cache-v1";
+const OFFLINE_IMAGE_CACHE = "siel-aac-image-cache-v3";
 
 let selectedCategoryId = "all";
 let sentenceCards = [];
@@ -409,15 +409,17 @@ async function cacheImageUrl(url) {
   try {
     const cache = await caches.open(OFFLINE_IMAGE_CACHE);
     const cached = await cache.match(url);
-    if (cached) return;
+    if (cached && !navigator.onLine) return;
 
-    const response = await fetch(url, { mode: "cors", credentials: "omit" });
+    const response = await fetch(url, { cache: navigator.onLine ? "reload" : "default", mode: "cors", credentials: "omit" });
     if (response && response.ok) {
       await cache.put(url, response.clone());
     }
   } catch (e) {
     try {
       const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+      const cached = await cache.match(url);
+      if (cached) return;
       const response = await fetch(url, { mode: "no-cors" });
       if (response && (response.ok || response.type === "opaque")) {
         await cache.put(url, response.clone());
@@ -440,6 +442,97 @@ function attachImageCacheOnLoad() {
       img.addEventListener("load", () => cacheImageUrl(img.currentSrc || img.src), { once: true });
     }
   });
+}
+
+
+function setSyncProgress(done, total, message) {
+  const el = $("syncStatus");
+  if (!el) return;
+
+  if (!total) {
+    el.textContent = message || "동기화 준비 중";
+    return;
+  }
+
+  const percent = Math.round((done / total) * 100);
+  el.textContent = `${message || "최신 그림 동기화 중"} ${done}/${total} (${percent}%)`;
+}
+
+function getCardVersion(card) {
+  return String(card.updatedAt || card.storagePath || card.image || card.id || "");
+}
+
+async function forceRefreshImageCache(url, versionKey) {
+  if (!url || !("caches" in window)) return false;
+  if (!/^https?:/.test(url)) return false;
+
+  try {
+    const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+    const cacheKey = `${url}#sielVersion=${encodeURIComponent(versionKey || url)}`;
+
+    const cachedVersion = await cache.match(cacheKey);
+    if (cachedVersion && !navigator.onLine) return true;
+
+    const keys = await cache.keys();
+    await Promise.all(
+      keys
+        .filter(req => req.url === url || req.url.startsWith(url + "#sielVersion="))
+        .map(req => cache.delete(req))
+    );
+
+    const response = await fetch(url, { cache: "reload", credentials: "omit", mode: "cors" });
+    if (response && response.ok) {
+      await cache.put(cacheKey, response.clone());
+      await cache.put(url, response.clone());
+      return true;
+    }
+  } catch (e) {
+    try {
+      const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+      const response = await fetch(url, { cache: "reload", mode: "no-cors" });
+      if (response && (response.ok || response.type === "opaque")) {
+        await cache.put(url, response.clone());
+        return true;
+      }
+    } catch (err) {
+      console.warn("최신 이미지 덮어쓰기 실패:", url, err);
+    }
+  }
+  return false;
+}
+
+async function syncLatestImagesFromCloud() {
+  if (!navigator.onLine || !("caches" in window)) {
+    updateSyncStatus();
+    return;
+  }
+
+  const cards = [];
+  data.categories.forEach(cat => {
+    cat.cards.forEach(card => {
+      if (card.image && /^https?:/.test(card.image)) cards.push(card);
+    });
+  });
+
+  if (!cards.length) {
+    updateSyncStatus("동기화할 그림이 없습니다.");
+    return;
+  }
+
+  setSyncProgress(0, cards.length, "최신 그림 동기화 중");
+
+  let done = 0;
+  for (const card of cards) {
+    await forceRefreshImageCache(card.image, getCardVersion(card));
+    done += 1;
+    if (done === 1 || done === cards.length || done % 3 === 0) {
+      setSyncProgress(done, cards.length, "최신 그림 동기화 중");
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+  }
+
+  updateSyncStatus("최신 그림으로 업데이트 완료. 이제 Wi-Fi를 꺼도 사용할 수 있어요.");
+  requestAnimationFrame(attachImageCacheOnLoad);
 }
 
 async function warmUpImageCache() {
@@ -467,7 +560,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielOfflineImageFix20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielSyncOverwrite20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -805,7 +898,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielOfflineImageFix20260628");
+    const configModule = await import("./firebase-config.js?v=sielSyncOverwrite20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -843,6 +936,7 @@ async function initFirebase() {
         saveLocalOnly();
         render();
         warmUpImageCache();
+        syncLatestImagesFromCloud();
       }
     }, (error) => {
       console.error("Firestore 읽기 실패:", error);
@@ -864,6 +958,7 @@ async function uploadToCloudIfReady() {
     await setDoc(doc(db, "aac", "siel"), { payload: data, updatedAt: Date.now() });
     updateSyncStatus("클라우드 동기화 완료");
     warmUpImageCache();
+    syncLatestImagesFromCloud();
   } catch (e) {
     console.warn("클라우드 저장 실패:", e);
     updateSyncStatus("기기 안에 저장됨: 연결되면 다시 동기화됩니다.");
@@ -874,11 +969,15 @@ registerServiceWorker().finally(() => {
   initFirebase();
   render();
   warmUpImageCache();
+  if (navigator.onLine) setTimeout(syncLatestImagesFromCloud, 1200);
 });
 
 window.addEventListener("online", () => {
-  updateSyncStatus("Wi-Fi 연결됨: 동기화 준비 중");
-  initFirebase().then(() => uploadToCloudIfReady()).catch(console.warn);
+  updateSyncStatus("Wi-Fi 연결됨: 최신 그림 동기화 준비 중");
+  initFirebase()
+    .then(() => uploadToCloudIfReady())
+    .then(() => syncLatestImagesFromCloud())
+    .catch(console.warn);
 });
 
 window.addEventListener("offline", () => {

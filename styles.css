@@ -969,3 +969,6 @@ hr {
     font-size: 12px;
   }
 }
+
+/* SYNC OVERWRITE STATUS */
+.syncStatus{white-space:normal;}
