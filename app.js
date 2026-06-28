@@ -35,6 +35,52 @@ const categoryIcons = {
   "숫자": "123"
 };
 
+/* CATEGORY ICON FIX 20260628 */
+const SIEL_CATEGORY_ICON_PATCH = {
+  "내 마음": "❤️",
+  "내마음": "❤️",
+  "주요연": "🎈",
+  "주요어": "🎈",
+  "주요": "🎈",
+  "먹어요": "🍴",
+  "놀아요": "🛝",
+  "나가요": "🚗",
+  "치료실": "🏢"
+};
+
+function sielApplyCategoryIconPatch() {
+  try {
+    if (typeof categoryIcons === "object" && categoryIcons) {
+      Object.assign(categoryIcons, SIEL_CATEGORY_ICON_PATCH);
+    }
+
+    if (typeof data === "object" && data && Array.isArray(data.categories)) {
+      data.categories.forEach(cat => {
+        const name = (cat.name || "").trim();
+        if (SIEL_CATEGORY_ICON_PATCH[name]) {
+          cat.icon = SIEL_CATEGORY_ICON_PATCH[name];
+        }
+      });
+      if (typeof saveLocalOnly === "function") saveLocalOnly();
+    }
+  } catch (e) {
+    console.warn("카테고리 아이콘 적용 실패:", e);
+  }
+}
+
+sielApplyCategoryIconPatch();
+
+document.addEventListener("DOMContentLoaded", () => {
+  sielApplyCategoryIconPatch();
+  if (typeof render === "function") setTimeout(render, 100);
+});
+setTimeout(() => {
+  sielApplyCategoryIconPatch();
+  if (typeof render === "function") render();
+}, 500);
+
+
+
 const defaultData = {
   categories: [
     { id: crypto.randomUUID(), name: "학교", icon: "🏫", cards: [] },
@@ -599,7 +645,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielUploadButtonFix20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielCategoryIconFix20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -1158,7 +1204,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielUploadButtonFix20260628");
+    const configModule = await import("./firebase-config.js?v=sielCategoryIconFix20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
