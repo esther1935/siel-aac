@@ -1751,3 +1751,121 @@ hr {
     overflow-y: hidden !important;
   }
 }
+
+
+/* CATEGORY SCROLL FIX 20260628
+   좁은 화면에서 카테고리 2줄은 유지하되,
+   flex-wrap 때문에 아래쪽이 잘리고 움직이지 않는 문제를 해결합니다.
+   2줄 + 가로 스크롤 방식으로 변경합니다. */
+
+@media (orientation: portrait) and (max-width: 520px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-template-rows: repeat(2, clamp(54px, 7.2vh, 66px)) !important;
+    grid-auto-columns: clamp(82px, 22.5vw, 102px) !important;
+
+    gap: clamp(7px, 1.6vw, 11px) clamp(8px, 1.9vw, 12px) !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+
+    align-items: center !important;
+    align-content: center !important;
+    justify-content: flex-start !important;
+
+    height: clamp(132px, 17.8vh, 158px) !important;
+    min-height: clamp(132px, 17.8vh, 158px) !important;
+    max-height: clamp(132px, 17.8vh, 158px) !important;
+
+    padding: clamp(8px, 1vh, 11px) clamp(8px, 1.8vw, 12px) !important;
+    margin: 0 clamp(7px, 1.8vw, 12px) clamp(5px, 0.9vh, 8px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(82px, 22.5vw, 102px) !important;
+    min-width: clamp(82px, 22.5vw, 102px) !important;
+    max-width: clamp(82px, 22.5vw, 102px) !important;
+
+    height: clamp(54px, 7.2vh, 66px) !important;
+    min-height: clamp(54px, 7.2vh, 66px) !important;
+    max-height: clamp(54px, 7.2vh, 66px) !important;
+
+    flex: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 스크롤바가 공간을 차지하지 않게 */
+  .categoryBar::-webkit-scrollbar,
+  .bottomCategories::-webkit-scrollbar,
+  .catBar::-webkit-scrollbar,
+  .tabs::-webkit-scrollbar {
+    height: 0 !important;
+    display: none !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    scrollbar-width: none !important;
+  }
+}
+
+/* 아주 낮은 세로 화면에서도 2줄 스크롤 유지 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    grid-template-rows: repeat(2, clamp(50px, 6.8vh, 60px)) !important;
+    grid-auto-columns: clamp(76px, 21.5vw, 94px) !important;
+    height: clamp(120px, 16.2vh, 140px) !important;
+    min-height: clamp(120px, 16.2vh, 140px) !important;
+    max-height: clamp(120px, 16.2vh, 140px) !important;
+    gap: 6px 7px !important;
+    padding: 6px 7px !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(76px, 21.5vw, 94px) !important;
+    min-width: clamp(76px, 21.5vw, 94px) !important;
+    max-width: clamp(76px, 21.5vw, 94px) !important;
+    height: clamp(50px, 6.8vh, 60px) !important;
+    min-height: clamp(50px, 6.8vh, 60px) !important;
+    max-height: clamp(50px, 6.8vh, 60px) !important;
+  }
+}
+
+/* 넓은 화면/가로 화면은 기존처럼 한 줄 */
+@media (orientation: landscape), (min-width: 521px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    touch-action: pan-x !important;
+  }
+}
