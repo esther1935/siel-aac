@@ -2287,3 +2287,16 @@ hr {
   border-radius: 16px;
   padding: 12px 14px;
 }
+
+/* UPLOAD BUTTON FIX */
+#adminDialog #adminPanel:not(.hidden) {
+  display: block;
+}
+#adminDialog #uploadPanel:not(.hidden) {
+  display: block;
+}
+#adminDialog #boardPanel.hidden,
+#adminDialog #uploadPanel.hidden,
+#adminDialog #adminPanel.hidden {
+  display: none !important;
+}

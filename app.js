@@ -599,7 +599,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielRoleAdminFinal20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielUploadButtonFix20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -1158,7 +1158,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielRoleAdminFinal20260628");
+    const configModule = await import("./firebase-config.js?v=sielUploadButtonFix20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1882,3 +1882,164 @@ function sielWireRoleEntry() {
 
 setInterval(sielWireRoleEntry, 800);
 document.addEventListener("DOMContentLoaded", sielWireRoleEntry);
+
+
+/* UPLOAD BUTTON FIX 20260628
+   엄마 관리자 → 그림 올리기 버튼을 눌렀을 때 다시 비밀번호로 돌아가지 않고
+   기존 adminDialog의 그림 올리기(uploadPanel)를 바로 열도록 보정합니다. */
+
+function sielOpenUploadPanelDirect() {
+  const roleOverlay = document.getElementById("sielRoleOverlay");
+  if (roleOverlay) roleOverlay.remove();
+
+  const dialog = document.getElementById("adminDialog");
+  if (!dialog) {
+    alert("관리자 화면을 찾지 못했습니다.");
+    return;
+  }
+
+  try {
+    if (typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+    else dialog.setAttribute("open", "open");
+  } catch (e) {
+    dialog.setAttribute("open", "open");
+  }
+
+  const pin = document.getElementById("pinInput");
+  const login = document.getElementById("loginBtn");
+  const menu = dialog.querySelector(".adminMenu");
+  const panel = document.getElementById("adminPanel");
+  const upload = document.getElementById("uploadPanel");
+  const board = document.getElementById("boardPanel");
+
+  if (pin) {
+    pin.value = "";
+    pin.classList.add("hidden");
+    pin.style.display = "none";
+  }
+  if (login) {
+    login.classList.add("hidden");
+    login.style.display = "none";
+  }
+  if (menu) {
+    menu.classList.remove("hidden");
+    menu.style.display = "grid";
+  }
+  if (panel) {
+    panel.classList.remove("hidden");
+    panel.style.display = "";
+  }
+  if (upload) {
+    upload.classList.remove("hidden");
+    upload.style.display = "";
+  }
+  if (board) {
+    board.classList.add("hidden");
+    board.style.display = "none";
+  }
+
+  if (typeof renderAdmin === "function") {
+    setTimeout(() => renderAdmin(), 50);
+  }
+}
+
+function sielOpenBoardPanelDirect() {
+  const roleOverlay = document.getElementById("sielRoleOverlay");
+  if (roleOverlay) roleOverlay.remove();
+
+  const dialog = document.getElementById("adminDialog");
+  if (!dialog) return;
+
+  try {
+    if (typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
+    else dialog.setAttribute("open", "open");
+  } catch (e) {
+    dialog.setAttribute("open", "open");
+  }
+
+  const pin = document.getElementById("pinInput");
+  const login = document.getElementById("loginBtn");
+  const menu = dialog.querySelector(".adminMenu");
+  const panel = document.getElementById("adminPanel");
+  const upload = document.getElementById("uploadPanel");
+  const board = document.getElementById("boardPanel");
+
+  if (pin) {
+    pin.value = "";
+    pin.classList.add("hidden");
+    pin.style.display = "none";
+  }
+  if (login) {
+    login.classList.add("hidden");
+    login.style.display = "none";
+  }
+  if (menu) {
+    menu.classList.remove("hidden");
+    menu.style.display = "grid";
+  }
+  if (panel) {
+    panel.classList.remove("hidden");
+    panel.style.display = "";
+  }
+  if (upload) {
+    upload.classList.add("hidden");
+    upload.style.display = "none";
+  }
+  if (board) {
+    board.classList.remove("hidden");
+    board.style.display = "";
+  }
+}
+
+function sielShowFullAdminMenuFixed() {
+  const el = sielRoleOverlay ? sielRoleOverlay() : document.getElementById("sielRoleOverlay");
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="sielRoleCard">
+      <button class="sielRoleClose" type="button">×</button>
+      <h2>엄마 관리자</h2>
+      <button class="sielRoleMenuBtn" type="button" data-fixed-admin="upload">그림 올리기</button>
+      <button class="sielRoleMenuBtn" type="button" data-fixed-admin="board">게시판</button>
+      <button class="sielRoleMenuBtn" type="button" data-fixed-admin="pending">승인대기 보기</button>
+    </div>
+  `;
+
+  const close = el.querySelector(".sielRoleClose");
+  if (close) close.onclick = () => {
+    const overlay = document.getElementById("sielRoleOverlay");
+    if (overlay) overlay.remove();
+  };
+
+  const uploadBtn = el.querySelector('[data-fixed-admin="upload"]');
+  const boardBtn = el.querySelector('[data-fixed-admin="board"]');
+  const pendingBtn = el.querySelector('[data-fixed-admin="pending"]');
+
+  if (uploadBtn) uploadBtn.onclick = sielOpenUploadPanelDirect;
+  if (boardBtn) boardBtn.onclick = sielOpenBoardPanelDirect;
+  if (pendingBtn) {
+    pendingBtn.onclick = () => {
+      if (typeof sielShowPendingUploads === "function") sielShowPendingUploads();
+      else alert("승인대기 기능을 찾지 못했습니다.");
+    };
+  }
+}
+
+// 기존 역할별 관리자 함수가 있으면 엄마 메뉴만 안전하게 덮어씁니다.
+try {
+  window.sielOpenUploadPanelDirect = sielOpenUploadPanelDirect;
+  window.sielOpenBoardPanelDirect = sielOpenBoardPanelDirect;
+  window.sielShowFullAdminMenu = sielShowFullAdminMenuFixed;
+} catch (e) {}
+
+// 혹시 기존 '그림 올리기' 버튼이 남아 있어도 클릭 시 바로 uploadPanel을 열도록 보정
+document.addEventListener("click", function(e) {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const text = (btn.textContent || "").trim();
+  if (text === "그림 올리기" && btn.closest("#sielRoleOverlay")) {
+    e.preventDefault();
+    e.stopPropagation();
+    sielOpenUploadPanelDirect();
+  }
+}, true);
