@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielAutoCategoryIcon20260628";
-const IMAGE_CACHE = "siel-aac-image-cache-autoicon";
+const CACHE_NAME = "siel-aac-app-sielCategoryRoleDirect20260628";
+const IMAGE_CACHE = "siel-aac-image-cache-roledirect";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielAutoCategoryIcon20260628",
-  "./app.js?v=sielAutoCategoryIcon20260628",
-  "./manifest.webmanifest?v=sielAutoCategoryIcon20260628"
+  "./styles.css?v=sielCategoryRoleDirect20260628",
+  "./app.js?v=sielCategoryRoleDirect20260628",
+  "./manifest.webmanifest?v=sielCategoryRoleDirect20260628"
 ];
 
 self.addEventListener("install", (event) => {

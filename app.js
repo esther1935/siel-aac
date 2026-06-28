@@ -645,7 +645,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielAutoCategoryIcon20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielCategoryRoleDirect20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -1204,7 +1204,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielAutoCategoryIcon20260628");
+    const configModule = await import("./firebase-config.js?v=sielCategoryRoleDirect20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -2205,3 +2205,249 @@ setTimeout(() => {
   sielApplyAutoCategoryIcons();
   if (typeof render === "function") render();
 }, 500);
+
+
+/* CATEGORY ROLE DIRECT MANAGER 20260628
+   제한 관리자(학교/늘봄/언어치료/사회성치료/교회)는
+   자신의 카테고리만 보고, 바로 추가/수정/삭제할 수 있습니다.
+   승인대기 없이 즉시 AAC에 반영됩니다. */
+
+let sielLimitedRolePage = 1;
+const SIEL_LIMITED_ROLE_PAGE_SIZE = 10;
+
+function sielRoleFormatSize(bytes) {
+  const n = Number(bytes || 0);
+  if (!n || Number.isNaN(n)) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function sielRoleCardImageSize(card) {
+  return sielRoleFormatSize(card.compressedSize || card.imageSize || card.sizeBytes || card.fileSize || card.bytes || 0);
+}
+
+function sielRoleEnsureCategory(name) {
+  let cat = data.categories.find(c => String(c.name || "").trim() === String(name || "").trim());
+  if (!cat) {
+    const icon = typeof sielGuessCategoryIcon === "function" ? sielGuessCategoryIcon(name) : "📁";
+    cat = { id: crypto.randomUUID(), name, icon, cards: [] };
+    data.categories.push(cat);
+    saveData();
+  }
+  return cat;
+}
+
+async function sielRoleOptimizeFile(file) {
+  if (!file) return file;
+  if (typeof compressImageFile === "function") return await compressImageFile(file);
+  if (typeof sielMakeOptimizedImageFile === "function") return await sielMakeOptimizedImageFile(file);
+  return file;
+}
+
+function sielRoleFileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function sielShowLimitedUploader(role) {
+  sielLimitedRolePage = 1;
+  sielRenderLimitedRoleManager(role);
+}
+
+function sielRenderLimitedRoleManager(role) {
+  const el = sielRoleOverlay();
+  const cat = sielRoleEnsureCategory(role.category);
+  const cards = cat.cards || [];
+  const totalPages = Math.max(1, Math.ceil(cards.length / SIEL_LIMITED_ROLE_PAGE_SIZE));
+  if (sielLimitedRolePage > totalPages) sielLimitedRolePage = totalPages;
+  if (sielLimitedRolePage < 1) sielLimitedRolePage = 1;
+
+  const start = (sielLimitedRolePage - 1) * SIEL_LIMITED_ROLE_PAGE_SIZE;
+  const pageCards = cards.slice(start, start + SIEL_LIMITED_ROLE_PAGE_SIZE);
+
+  el.innerHTML = `
+    <div class="sielRoleCard sielRoleWide">
+      <button class="sielRoleClose" type="button">×</button>
+      <button class="sielRoleBack" type="button">‹ 역할 선택</button>
+      <h2>${sielRoleEscape(role.label)} 관리자</h2>
+      <p class="sielRoleSub"><b>${sielRoleEscape(role.category)}</b> 카테고리만 추가·수정·삭제할 수 있습니다.</p>
+
+      <div class="sielLimitedSection">
+        <h3>그림 올리기</h3>
+        <label class="sielRoleLabel">사진 찍기/선택</label>
+        <input class="sielRoleFile" id="sielLimitedFile" type="file" accept="image/*" capture="environment" />
+
+        <label class="sielRoleLabel">그림 이름</label>
+        <input class="sielRoleName" id="sielLimitedName" type="text" placeholder="예: 급식실" />
+
+        <button class="sielRolePrimary" id="sielLimitedAddBtn" type="button">바로 저장</button>
+        <p class="sielRoleSub sielRoleStatus" id="sielLimitedStatus"></p>
+      </div>
+
+      <div class="sielLimitedSection">
+        <h3>${sielRoleEscape(role.category)} 그림 관리</h3>
+        <div class="sielLimitedList">
+          ${pageCards.length ? pageCards.map(card => `
+            <div class="sielLimitedItem" data-card-id="${card.id}">
+              <img src="${imageDisplayUrl ? imageDisplayUrl(card) : card.image}" alt="" />
+              <div class="sielLimitedInfo">
+                <b>${sielRoleEscape(card.text)}</b>
+                <span>${sielRoleCardImageSize(card)}</span>
+              </div>
+              <button type="button" data-action="edit">수정</button>
+              <button type="button" data-action="delete">삭제</button>
+            </div>
+          `).join("") : `<p class="sielRoleSub">아직 등록된 그림이 없습니다.</p>`}
+        </div>
+        <div class="sielLimitedPager">
+          <button type="button" id="sielLimitedPrev" ${sielLimitedRolePage <= 1 ? "disabled" : ""}>‹ 이전</button>
+          <span>${sielLimitedRolePage} / ${totalPages} · 총 ${cards.length}개</span>
+          <button type="button" id="sielLimitedNext" ${sielLimitedRolePage >= totalPages ? "disabled" : ""}>다음 ›</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
+  el.querySelector(".sielRoleBack").onclick = sielShowRoleLogin;
+
+  el.querySelector("#sielLimitedAddBtn").onclick = async () => {
+    const fileInput = el.querySelector("#sielLimitedFile");
+    const nameInput = el.querySelector("#sielLimitedName");
+    const status = el.querySelector("#sielLimitedStatus");
+    const originalFile = fileInput.files && fileInput.files[0];
+    const text = nameInput.value.trim();
+
+    if (!originalFile || !text) {
+      status.textContent = "사진과 그림 이름을 입력해 주세요.";
+      return;
+    }
+
+    status.textContent = "압축하고 저장 중입니다...";
+    try {
+      const file = await sielRoleOptimizeFile(originalFile);
+      const dataUrl = await sielRoleFileToDataUrl(file);
+      const newCard = {
+        id: crypto.randomUUID(),
+        text,
+        speak: text,
+        image: dataUrl,
+        storagePath: "",
+        imageSize: file.size || 0,
+        compressedSize: file.size || 0,
+        originalSize: originalFile.size || 0,
+        imageType: file.type || "",
+        createdBy: role.label,
+        updatedAt: Date.now()
+      };
+      cat.cards.push(newCard);
+      if (typeof sielApplyAutoCategoryIcons === "function") sielApplyAutoCategoryIcons();
+      saveData();
+      status.textContent = `저장되었습니다. ${sielRoleFormatSize(file.size)}`;
+      setTimeout(() => sielRenderLimitedRoleManager(role), 400);
+    } catch (e) {
+      console.error(e);
+      status.textContent = "저장 중 오류가 났습니다.";
+    }
+  };
+
+  el.querySelectorAll(".sielLimitedItem").forEach(row => {
+    const cardId = row.dataset.cardId;
+    const card = cat.cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    row.querySelector('[data-action="edit"]').onclick = () => sielShowLimitedEdit(role, cat, card);
+    row.querySelector('[data-action="delete"]').onclick = () => {
+      if (!confirm(`'${card.text}' 그림을 삭제할까요?`)) return;
+      cat.cards = cat.cards.filter(c => c.id !== card.id);
+      sentenceCards = (sentenceCards || []).filter(c => c.id !== card.id);
+      saveData();
+      sielRenderLimitedRoleManager(role);
+    };
+  });
+
+  const prev = el.querySelector("#sielLimitedPrev");
+  const next = el.querySelector("#sielLimitedNext");
+  if (prev) prev.onclick = () => {
+    if (sielLimitedRolePage > 1) {
+      sielLimitedRolePage -= 1;
+      sielRenderLimitedRoleManager(role);
+    }
+  };
+  if (next) next.onclick = () => {
+    if (sielLimitedRolePage < totalPages) {
+      sielLimitedRolePage += 1;
+      sielRenderLimitedRoleManager(role);
+    }
+  };
+}
+
+function sielShowLimitedEdit(role, cat, card) {
+  const el = sielRoleOverlay();
+  el.innerHTML = `
+    <div class="sielRoleCard sielRoleWide">
+      <button class="sielRoleClose" type="button">×</button>
+      <button class="sielRoleBack" type="button">‹ ${sielRoleEscape(role.category)} 관리</button>
+      <h2>그림 수정</h2>
+      <div class="sielLimitedPreview">
+        <img src="${imageDisplayUrl ? imageDisplayUrl(card) : card.image}" alt="" />
+        <span>${sielRoleCardImageSize(card)}</span>
+      </div>
+
+      <label class="sielRoleLabel">그림 이름</label>
+      <input class="sielRoleName" id="sielLimitedEditName" type="text" value="${sielRoleEscape(card.text)}" />
+
+      <label class="sielRoleLabel">사진 교체 선택사항</label>
+      <input class="sielRoleFile" id="sielLimitedEditFile" type="file" accept="image/*" capture="environment" />
+
+      <button class="sielRolePrimary" id="sielLimitedSaveEdit" type="button">수정 저장</button>
+      <p class="sielRoleSub sielRoleStatus" id="sielLimitedEditStatus"></p>
+    </div>
+  `;
+
+  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
+  el.querySelector(".sielRoleBack").onclick = () => sielRenderLimitedRoleManager(role);
+
+  el.querySelector("#sielLimitedSaveEdit").onclick = async () => {
+    const nameInput = el.querySelector("#sielLimitedEditName");
+    const fileInput = el.querySelector("#sielLimitedEditFile");
+    const status = el.querySelector("#sielLimitedEditStatus");
+    const text = nameInput.value.trim();
+    if (!text) {
+      status.textContent = "그림 이름을 입력해 주세요.";
+      return;
+    }
+
+    status.textContent = "수정 중입니다...";
+    try {
+      card.text = text;
+      card.speak = text;
+      const originalFile = fileInput.files && fileInput.files[0];
+      if (originalFile) {
+        const file = await sielRoleOptimizeFile(originalFile);
+        const dataUrl = await sielRoleFileToDataUrl(file);
+        card.image = dataUrl;
+        card.storagePath = "";
+        card.imageSize = file.size || 0;
+        card.compressedSize = file.size || 0;
+        card.originalSize = originalFile.size || 0;
+        card.imageType = file.type || "";
+      }
+      card.updatedAt = Date.now();
+      saveData();
+      status.textContent = "수정되었습니다.";
+      setTimeout(() => sielRenderLimitedRoleManager(role), 400);
+    } catch (e) {
+      console.error(e);
+      status.textContent = "수정 중 오류가 났습니다.";
+    }
+  };
+}
+
+// 기존 승인대기 방식 함수를 최종적으로 직접 관리 방식으로 덮어씁니다.
+window.sielShowLimitedUploader = sielShowLimitedUploader;

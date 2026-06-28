@@ -2326,3 +2326,96 @@ hr {
   align-items: center;
   justify-content: center;
 }
+
+/* CATEGORY ROLE DIRECT MANAGER */
+.sielLimitedSection {
+  background: rgba(255,255,255,.72);
+  border: 2px solid #F0E4AA;
+  border-radius: 18px;
+  padding: 14px;
+  margin-top: 14px;
+  text-align: left;
+}
+
+.sielLimitedSection h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #333;
+  text-align: center;
+}
+
+.sielLimitedList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sielLimitedItem {
+  display: grid;
+  grid-template-columns: 58px 1fr 58px 58px;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid #f0e3b0;
+  padding: 8px 0;
+}
+
+.sielLimitedItem img,
+.sielLimitedPreview img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: white;
+}
+
+.sielLimitedInfo b {
+  display: block;
+  font-size: 15px;
+  color: #222;
+}
+
+.sielLimitedInfo span,
+.sielLimitedPreview span {
+  display: block;
+  font-size: 12px;
+  color: #C6C6C6;
+}
+
+.sielLimitedItem button {
+  min-height: 42px;
+  border-radius: 13px;
+  border: 1px solid #E4C95F;
+  background: #fffdf5;
+  font-weight: 900;
+}
+
+.sielLimitedPager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 12px;
+  color: #999;
+  font-size: 13px;
+}
+
+.sielLimitedPager button {
+  border: 2px solid #E8D896;
+  border-radius: 13px;
+  background: #fffdf5;
+  padding: 7px 10px;
+  font-weight: 900;
+}
+
+.sielLimitedPager button:disabled {
+  opacity: .35;
+}
+
+.sielLimitedPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 12px 0;
+}
