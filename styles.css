@@ -2313,3 +2313,17 @@ hr {
   align-items: center;
   justify-content: center;
 }
+
+
+/* KB ADMIN ONLY PATCH 20260628 */
+.sielKbHiddenOnMain {
+  display: none !important;
+}
+#adminDialog .sielKbHiddenOnMain,
+#sielRoleOverlay .sielKbHiddenOnMain,
+.adminPanel .sielKbHiddenOnMain,
+.adminContent .sielKbHiddenOnMain,
+.modal .sielKbHiddenOnMain,
+.drawer .sielKbHiddenOnMain {
+  display: inline !important;
+}

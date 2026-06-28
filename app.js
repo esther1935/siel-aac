@@ -645,7 +645,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielCategoryIconFix20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielKbAdminOnly20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -2089,3 +2089,43 @@ document.addEventListener("click", function(e) {
     sielOpenUploadPanelDirect();
   }
 }, true);
+
+
+/* KB ADMIN ONLY PATCH 20260628
+   일반 AAC 화면에는 그림 용량(KB/MB)을 보이지 않게 하고,
+   관리자 화면 안에서는 그대로 보이게 합니다. */
+
+function sielHideKbOutsideAdminOnly() {
+  try {
+    const nodes = Array.from(document.querySelectorAll("span, em, small, div"));
+    nodes.forEach(el => {
+      const text = (el.textContent || "").trim();
+      if (!/^\d+(\.\d+)?\s*(B|KB|MB)$/i.test(text)) return;
+
+      const inAdmin =
+        el.closest("#adminDialog") ||
+        el.closest("#sielRoleOverlay") ||
+        el.closest(".adminPanel") ||
+        el.closest(".adminContent") ||
+        el.closest(".modal") ||
+        el.closest(".drawer") ||
+        el.closest(".sielTeacherRecentBox");
+
+      if (!inAdmin) {
+        el.classList.add("sielKbHiddenOnMain");
+      } else {
+        el.classList.remove("sielKbHiddenOnMain");
+      }
+    });
+  } catch (e) {}
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(sielHideKbOutsideAdminOnly, 300);
+});
+
+document.addEventListener("click", () => {
+  setTimeout(sielHideKbOutsideAdminOnly, 300);
+}, true);
+
+setInterval(sielHideKbOutsideAdminOnly, 1200);
