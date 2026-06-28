@@ -1131,3 +1131,125 @@ hr {
     padding: 1px !important;
   }
 }
+
+
+/* PWA HARD IMAGE LAYOUT FIX 20260628
+   설치 앱에서 카드 내부 grid/flex 높이 계산이 깨지는 문제를 피하기 위해
+   이미지와 글씨를 absolute 영역으로 강제 분리합니다. */
+
+.card,
+.sentenceChip {
+  position: relative !important;
+  display: block !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.cardImageBox,
+.sentenceImageBox {
+  position: absolute !important;
+  left: 8px !important;
+  right: 8px !important;
+  top: 8px !important;
+  bottom: clamp(34px, 22%, 56px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  width: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.card .label,
+.sentenceLabel {
+  position: absolute !important;
+  left: 4px !important;
+  right: 4px !important;
+  bottom: 6px !important;
+  height: clamp(28px, 20%, 52px) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  line-height: 1.04 !important;
+  box-sizing: border-box !important;
+}
+
+.cardImageBox img,
+.sentenceImageBox img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* 소리값 숨김 */
+.cardSpeak,
+.sentenceSpeak {
+  display: none !important;
+}
+
+/* 휴대폰/설치앱 세로화면 */
+@media (orientation: portrait) {
+  .cardImageBox,
+  .sentenceImageBox {
+    left: 8px !important;
+    right: 8px !important;
+    top: 8px !important;
+    bottom: clamp(36px, 24%, 58px) !important;
+  }
+
+  .card .label,
+  .sentenceLabel {
+    height: clamp(32px, 22%, 58px) !important;
+  }
+
+  .card .label {
+    font-size: clamp(18px, 4.8vw, 27px) !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(17px, 4.5vw, 25px) !important;
+  }
+}
+
+/* 낮은 가로형 태블릿 */
+@media (orientation: landscape) and (max-height: 720px) {
+  .cardImageBox,
+  .sentenceImageBox {
+    left: 6px !important;
+    right: 6px !important;
+    top: 6px !important;
+    bottom: clamp(24px, 20%, 40px) !important;
+  }
+
+  .card .label,
+  .sentenceLabel {
+    bottom: 4px !important;
+    height: clamp(20px, 20%, 34px) !important;
+  }
+
+  .card .label {
+    font-size: clamp(13px, 1.7vw, 18px) !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(12px, 1.6vw, 17px) !important;
+  }
+}

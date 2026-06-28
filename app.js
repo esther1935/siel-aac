@@ -580,7 +580,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielPwaCardFixed20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielOfflineStartFix20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -918,7 +918,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielPwaCardFixed20260628");
+    const configModule = await import("./firebase-config.js?v=sielOfflineStartFix20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1003,3 +1003,77 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", () => {
   updateSyncStatus("오프라인 모드: 이 기기에 저장된 그림으로 사용할 수 있어요.");
 });
+
+
+function hardFixPwaImageLayout() {
+  const fixOne = (card, imageSelector, labelSelector) => {
+    if (!card) return;
+    const imgBox = card.querySelector(imageSelector);
+    const label = card.querySelector(labelSelector);
+    if (!imgBox || !label) return;
+
+    const h = card.clientHeight || card.getBoundingClientRect().height || 0;
+    if (!h) return;
+
+    const labelH = Math.max(28, Math.min(52, Math.round(h * 0.22)));
+    const imageH = Math.max(40, h - labelH - 14);
+
+    card.style.display = "block";
+    card.style.position = "relative";
+    card.style.overflow = "hidden";
+    card.style.boxSizing = "border-box";
+
+    imgBox.style.position = "absolute";
+    imgBox.style.left = "8px";
+    imgBox.style.right = "8px";
+    imgBox.style.top = "8px";
+    imgBox.style.height = imageH + "px";
+    imgBox.style.display = "flex";
+    imgBox.style.alignItems = "center";
+    imgBox.style.justifyContent = "center";
+    imgBox.style.overflow = "hidden";
+    imgBox.style.padding = "0";
+    imgBox.style.boxSizing = "border-box";
+
+    label.style.position = "absolute";
+    label.style.left = "4px";
+    label.style.right = "4px";
+    label.style.bottom = "6px";
+    label.style.height = labelH + "px";
+    label.style.display = "flex";
+    label.style.alignItems = "center";
+    label.style.justifyContent = "center";
+    label.style.textAlign = "center";
+    label.style.overflow = "hidden";
+    label.style.lineHeight = "1.05";
+
+    imgBox.querySelectorAll("img").forEach(img => {
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.maxWidth = "100%";
+      img.style.maxHeight = "100%";
+      img.style.objectFit = "contain";
+      img.style.objectPosition = "center center";
+      img.style.display = "block";
+    });
+  };
+
+  document.querySelectorAll(".card").forEach(card => fixOne(card, ".cardImageBox", ".label"));
+  document.querySelectorAll(".sentenceChip").forEach(card => fixOne(card, ".sentenceImageBox", ".sentenceLabel"));
+}
+
+window.addEventListener("resize", () => setTimeout(hardFixPwaImageLayout, 80));
+window.addEventListener("orientationchange", () => setTimeout(hardFixPwaImageLayout, 250));
+setInterval(hardFixPwaImageLayout, 1200);
+
+requestAnimationFrame(hardFixPwaImageLayout);
+
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!sessionStorage.getItem("siel_sw_reloaded_once")) {
+      sessionStorage.setItem("siel_sw_reloaded_once", "1");
+      window.location.reload();
+    }
+  });
+}
