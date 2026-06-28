@@ -1869,3 +1869,163 @@ hr {
     touch-action: pan-x !important;
   }
 }
+
+
+/* CATEGORY 3 ROW FIX 20260628
+   좁은 휴대폰/Z Fold 접은 화면에서는 카테고리를 3줄 자동 배치 + 좌우 스크롤로 표시합니다.
+   넓은 화면/가로 화면/태블릿/노트북은 기존처럼 1줄 유지합니다. */
+
+@media (orientation: portrait) and (max-width: 520px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h, clamp(58px, 8vh, 70px))
+      minmax(178px, 28.5vh)
+      minmax(142px, 21vh)
+      minmax(16px, 2.4vh)
+      clamp(174px, 23vh, 206px) !important;
+    row-gap: clamp(4px, 0.75vh, 7px) !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-template-rows: repeat(3, clamp(50px, 6.8vh, 62px)) !important;
+    grid-auto-columns: clamp(82px, 22.5vw, 104px) !important;
+
+    gap: clamp(6px, 1.4vw, 10px) clamp(8px, 1.8vw, 12px) !important;
+
+    height: clamp(174px, 23vh, 206px) !important;
+    min-height: clamp(174px, 23vh, 206px) !important;
+    max-height: clamp(174px, 23vh, 206px) !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+
+    align-items: center !important;
+    align-content: center !important;
+    justify-content: flex-start !important;
+
+    margin: 0 clamp(7px, 1.8vw, 12px) clamp(5px, 0.9vh, 8px) !important;
+    padding: clamp(8px, 1vh, 11px) clamp(8px, 1.8vw, 12px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(82px, 22.5vw, 104px) !important;
+    min-width: clamp(82px, 22.5vw, 104px) !important;
+    max-width: clamp(82px, 22.5vw, 104px) !important;
+
+    height: clamp(50px, 6.8vh, 62px) !important;
+    min-height: clamp(50px, 6.8vh, 62px) !important;
+    max-height: clamp(50px, 6.8vh, 62px) !important;
+
+    flex: none !important;
+    box-sizing: border-box !important;
+    padding: 3px 6px !important;
+  }
+
+  .categoryBtn .icon,
+  .catBtn .icon,
+  .tabBtn .icon,
+  .categoryBar button .icon,
+  .bottomCategories button .icon,
+  .catBar button .icon,
+  .tabs button .icon {
+    font-size: clamp(17px, 4.4vw, 23px) !important;
+    line-height: 1 !important;
+  }
+
+  .categoryBtn .label,
+  .catBtn .label,
+  .tabBtn .label,
+  .categoryBar button .label,
+  .bottomCategories button .label,
+  .catBar button .label,
+  .tabs button .label {
+    font-size: clamp(14px, 3.6vw, 19px) !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+  }
+
+  .categoryBar::-webkit-scrollbar,
+  .bottomCategories::-webkit-scrollbar,
+  .catBar::-webkit-scrollbar,
+  .tabs::-webkit-scrollbar {
+    height: 0 !important;
+    display: none !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    scrollbar-width: none !important;
+  }
+}
+
+/* 화면 높이가 낮은 좁은 휴대폰에서도 3줄 유지하되 버튼을 조금 줄임 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h, clamp(54px, 7.6vh, 66px))
+      minmax(166px, 26vh)
+      minmax(130px, 19.5vh)
+      minmax(14px, 2vh)
+      clamp(156px, 21vh, 184px) !important;
+    row-gap: 3px !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    grid-template-rows: repeat(3, clamp(46px, 6.1vh, 56px)) !important;
+    grid-auto-columns: clamp(76px, 21.5vw, 96px) !important;
+    height: clamp(156px, 21vh, 184px) !important;
+    min-height: clamp(156px, 21vh, 184px) !important;
+    max-height: clamp(156px, 21vh, 184px) !important;
+    gap: 5px 7px !important;
+    padding: 6px 7px !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(76px, 21.5vw, 96px) !important;
+    min-width: clamp(76px, 21.5vw, 96px) !important;
+    max-width: clamp(76px, 21.5vw, 96px) !important;
+    height: clamp(46px, 6.1vh, 56px) !important;
+    min-height: clamp(46px, 6.1vh, 56px) !important;
+    max-height: clamp(46px, 6.1vh, 56px) !important;
+  }
+}
+
+/* 넓은 화면/가로 화면은 반드시 한 줄 유지 */
+@media (orientation: landscape), (min-width: 521px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    touch-action: pan-x !important;
+  }
+}

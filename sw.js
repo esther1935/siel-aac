@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielCategoryScrollFix20260628";
-const IMAGE_CACHE = "siel-aac-image-cache-v13";
+const CACHE_NAME = "siel-aac-app-sielCategory3Row20260628";
+const IMAGE_CACHE = "siel-aac-image-cache-v14";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielCategoryScrollFix20260628",
-  "./app.js?v=sielCategoryScrollFix20260628",
-  "./manifest.webmanifest?v=sielCategoryScrollFix20260628"
+  "./styles.css?v=sielCategory3Row20260628",
+  "./app.js?v=sielCategory3Row20260628",
+  "./manifest.webmanifest?v=sielCategory3Row20260628"
 ];
 
 self.addEventListener("install", (event) => {
