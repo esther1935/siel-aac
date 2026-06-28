@@ -26,90 +26,81 @@ button {
   display: none !important;
 }
 
-/* 
-  Z Fold 펼친 화면 시안을 기준으로 한 안정형 반응 비율.
-  핵심:
-  - 화면이 바뀌어도 ①검색 ②문장판 ③카드슬라이드 ④카테고리 비율 유지
-  - 문장판 카드 배경은 연노랑
-  - 아래 선택카드는 흰색
-  - 이미지/글씨는 박스 안에서 잘리지 않음
-*/
+/* 전체 화면 변수: 기기마다 자동 비율 */
 :root {
-  --bg: #fffaf0;
-  --top-bg: #fff7d6;
-  --line: #eadca4;
-  --card-line: #f1d26f;
-  --sentence-card-bg: #fffdf2;
+  --top-h: clamp(52px, 8vh, 76px);
+  --search-h: clamp(42px, 6.2vh, 58px);
+  --cat-h: clamp(72px, 10vh, 92px);
+  --gap: clamp(5px, 1.1vh, 10px);
+  --side-pad: clamp(8px, 1.7vw, 18px);
+
+  --sentence-card-w: clamp(150px, 26vw, 300px);
+  --sentence-card-h: clamp(178px, 29vh, 310px);
+  --sentence-img-h: clamp(82px, 17vh, 190px);
+
+  --choice-card-w: clamp(118px, 17vw, 180px);
+  --choice-card-h: clamp(148px, 23vh, 210px);
+  --choice-img-h: clamp(72px, 13.5vh, 128px);
+
   --select-gray: #A6A6A6;
-
-  --top-h: clamp(56px, 7.4vh, 78px);
-  --search-h: clamp(44px, 6vh, 58px);
-  --cat-h: clamp(76px, 9.2vh, 92px);
-  --pad-x: clamp(10px, 1.5vw, 18px);
-  --gap: clamp(6px, 0.9vh, 10px);
-
-  /* 각 영역 카드 비율 */
-  --sentence-card-w: clamp(210px, 25vw, 310px);
-  --sentence-card-h: clamp(220px, 28vh, 330px);
-
-  --choice-card-w: clamp(145px, 17vw, 210px);
-  --choice-card-h: clamp(170px, 22vh, 230px);
+  --soft-yellow: #fff7d6;
+  --line-yellow: #eadca4;
 }
 
 /* 상단 */
 .topbar {
   height: var(--top-h);
   display: grid;
-  grid-template-columns: clamp(48px, 7vw, 68px) 1fr clamp(48px, 7vw, 68px);
+  grid-template-columns: clamp(44px, 8vw, 66px) 1fr clamp(44px, 8vw, 66px);
   align-items: center;
   gap: 8px;
-  padding: 8px var(--pad-x);
-  background: var(--top-bg);
-  border-bottom: 2px solid var(--line);
+  padding: clamp(6px, 1vh, 10px) var(--side-pad);
+  background: var(--soft-yellow);
+  border-bottom: 2px solid var(--line-yellow);
 }
 
 .hamburger,
 .topSpacer {
-  width: clamp(44px, 6.5vw, 62px);
-  height: clamp(40px, 5.8vh, 54px);
+  width: clamp(42px, 7.3vw, 62px);
+  height: clamp(38px, 6.5vh, 54px);
 }
 
 .hamburger {
   background: #fff;
   border: 1px solid #ddd;
-  border-radius: clamp(12px, 1.8vw, 18px);
-  font-size: clamp(24px, 3.5vw, 32px);
+  border-radius: clamp(12px, 2vw, 18px);
+  font-size: clamp(23px, 4vw, 30px);
   font-weight: 900;
 }
 
 .topbar h1 {
   margin: 0;
   text-align: center;
-  font-size: clamp(24px, 3.8vw, 36px);
+  font-size: clamp(22px, 4.2vw, 34px);
   font-weight: 900;
 }
 
-/* 전체 레이아웃: 시안 기준 비율 */
+/* 핵심: 전체 높이를 4등분 고정하지 않고, 남는 공간을 자동 배분 */
 .aacLayout {
   height: calc(100dvh - var(--top-h));
   display: grid;
   grid-template-rows:
     var(--search-h)
-    minmax(230px, 43fr)
-    minmax(170px, 30fr)
+    minmax(210px, 42fr)
+    minmax(150px, 32fr)
     var(--cat-h);
   gap: var(--gap);
-  padding: var(--gap) var(--pad-x) 0;
+  padding: var(--gap) var(--side-pad) 0;
   overflow: hidden;
 }
 
 /* 검색 */
 .searchPanel {
-  min-height: 0;
   display: grid;
   grid-template-columns: var(--search-h) 1fr var(--search-h);
-  gap: clamp(8px, 1vw, 12px);
+  gap: clamp(6px, 1.2vw, 12px);
   align-items: center;
+  min-height: 0;
 }
 
 .searchIcon,
@@ -118,10 +109,10 @@ button {
   height: var(--search-h);
   display: grid;
   place-items: center;
-  border-radius: clamp(12px, 1.7vw, 16px);
+  border-radius: clamp(12px, 2vw, 16px);
   background: #fff;
   border: 2px solid #f0d98e;
-  font-size: clamp(22px, 3vw, 28px);
+  font-size: clamp(22px, 4vw, 28px);
 }
 
 .micBtn.listening {
@@ -131,35 +122,35 @@ button {
 .searchPanel input {
   height: var(--search-h);
   min-width: 0;
-  padding: 0 clamp(12px, 1.5vw, 18px);
-  font-size: clamp(18px, 2.6vw, 24px);
-  border-radius: clamp(12px, 1.7vw, 16px);
-  border: 2px solid var(--line);
+  padding: 0 clamp(12px, 2vw, 18px);
+  font-size: clamp(18px, 3.3vw, 24px);
+  border-radius: clamp(12px, 2vw, 16px);
+  border: 2px solid var(--line-yellow);
   background: #fff;
 }
 
-/* 문장판 */
+/* 문장 만들기 */
 .sentencePanel {
   position: relative;
   min-height: 0;
   overflow: hidden;
   background: #fff;
-  border: 3px dashed var(--line);
-  border-radius: clamp(20px, 2.4vw, 30px);
+  border: 3px dashed var(--line-yellow);
+  border-radius: clamp(18px, 3vw, 28px);
   padding:
-    clamp(54px, 6.3vh, 76px)
-    clamp(18px, 2.2vw, 28px)
-    clamp(42px, 5.2vh, 56px);
+    clamp(48px, 7vh, 72px)
+    clamp(12px, 2.5vw, 26px)
+    clamp(38px, 6vh, 50px);
 }
 
 .clearSentenceBtn {
   position: absolute;
-  top: clamp(12px, 1.8vh, 20px);
-  right: clamp(16px, 2vw, 24px);
-  padding: clamp(8px, 1.2vh, 13px) clamp(16px, 2vw, 24px);
+  top: clamp(10px, 2vh, 18px);
+  right: clamp(12px, 2.5vw, 22px);
+  padding: clamp(8px, 1.5vh, 12px) clamp(14px, 2.5vw, 22px);
   border-radius: 20px;
   background: #efefef;
-  font-size: clamp(16px, 2.3vw, 21px);
+  font-size: clamp(15px, 2.6vw, 20px);
   font-weight: 800;
   z-index: 3;
 }
@@ -168,13 +159,13 @@ button {
   height: 100%;
   width: 100%;
   display: flex;
-  gap: clamp(16px, 2.1vw, 26px);
+  gap: clamp(12px, 2vw, 22px);
   align-items: center;
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
-  padding: 0;
+  padding: 0 0 4px;
 }
 
 .sentenceCanvas::-webkit-scrollbar,
@@ -187,7 +178,7 @@ button {
   width: 100%;
   text-align: center;
   color: #9a9a9a;
-  font-size: clamp(22px, 3.2vw, 32px);
+  font-size: clamp(22px, 4vw, 32px);
   font-weight: 900;
   line-height: 1.45;
 }
@@ -199,12 +190,15 @@ button {
   height: min(var(--sentence-card-h), 100%);
   max-height: 100%;
   scroll-snap-align: start;
-  border-radius: clamp(18px, 2.2vw, 26px);
-  background: var(--sentence-card-bg);
-  border: 3px solid var(--card-line);
-  padding: clamp(10px, 1.5vh, 16px);
+  border-radius: clamp(18px, 3vw, 24px);
+  background: #fffdf8;
+  border: 3px solid #f1d26f;
+  padding: clamp(8px, 1.5vh, 16px);
   display: grid;
-  grid-template-rows: minmax(0, 4fr) minmax(26px, 1fr);
+  grid-template-rows:
+    clamp(22px, 4vh, 34px)
+    minmax(0, 1fr)
+    clamp(36px, 6vh, 56px);
   align-items: center;
   justify-items: center;
   overflow: hidden;
@@ -212,20 +206,26 @@ button {
 
 .removeChip {
   position: absolute;
-  top: clamp(6px, 1vh, 10px);
-  right: clamp(8px, 1vw, 12px);
-  width: clamp(28px, 4vw, 38px);
-  height: clamp(28px, 4vw, 38px);
+  top: clamp(4px, 1vh, 10px);
+  right: clamp(6px, 1.2vw, 12px);
+  width: clamp(28px, 5vw, 36px);
+  height: clamp(28px, 5vw, 36px);
   background: transparent;
   color: #e12626;
-  font-size: clamp(28px, 4vw, 38px);
+  font-size: clamp(28px, 5vw, 36px);
   line-height: 1;
   font-weight: 900;
   z-index: 2;
 }
 
 .sentenceSpeak {
-  display: none !important;
+  font-size: clamp(13px, 2.2vw, 18px);
+  font-weight: 800;
+  align-self: start;
+  white-space: nowrap;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sentenceImageBox {
@@ -235,38 +235,34 @@ button {
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: 2px;
 }
 
 .sentenceImageBox img,
 .sentenceImageBox .noImage {
   width: 100%;
   height: 100%;
+  max-height: var(--sentence-img-h);
   object-fit: contain;
   object-position: center center;
   display: block;
 }
 
 .sentenceLabel {
-  width: 100%;
-  min-height: 26px;
-  display: grid;
-  place-items: center;
-  font-size: clamp(20px, 3vw, 30px);
+  font-size: clamp(26px, 5vw, 38px);
   font-weight: 900;
-  line-height: 1.08;
+  line-height: 1.05;
   text-align: center;
-  overflow-wrap: anywhere;
+  max-width: 100%;
 }
 
 .sentenceText {
   position: absolute;
   left: clamp(60px, 12vw, 120px);
   right: clamp(60px, 12vw, 120px);
-  bottom: clamp(8px, 1.4vh, 14px);
-  height: clamp(22px, 3.7vh, 32px);
-  font-size: clamp(17px, 2.6vw, 24px);
-  font-weight: 800;
+  bottom: clamp(8px, 1.6vh, 14px);
+  height: clamp(26px, 4.5vh, 34px);
+  font-size: clamp(20px, 3.8vw, 28px);
+  font-weight: 900;
   color: #555;
   text-align: center;
   white-space: nowrap;
@@ -274,13 +270,13 @@ button {
   text-overflow: ellipsis;
 }
 
-/* 가운데 선택카드: YouTube처럼 좌우 스와이프 */
+/* 가운데 카드 캐러셀 */
 .cardsPanel {
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) clamp(18px, 3vh, 26px);
+  grid-template-rows: minmax(0, 1fr) clamp(18px, 3.5vh, 26px);
   gap: 2px;
-  background: var(--bg);
+  background: #fffaf0;
   overflow: hidden;
 }
 
@@ -288,7 +284,7 @@ button {
   min-height: 0;
   display: flex;
   align-items: center;
-  gap: clamp(12px, 1.7vw, 20px);
+  gap: clamp(10px, 2vw, 18px);
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
@@ -302,14 +298,17 @@ button {
   height: min(var(--choice-card-h), 100%);
   max-height: 100%;
   scroll-snap-align: start;
-  border-radius: clamp(16px, 2vw, 22px);
+  border-radius: clamp(14px, 2.6vw, 20px);
   background: #fff;
   border: 2px solid #e4e4e4;
   display: grid;
-  grid-template-rows: minmax(14px, 0.7fr) minmax(0, 4fr) minmax(28px, 1fr);
+  grid-template-rows:
+    clamp(18px, 3.2vh, 28px)
+    minmax(0, 1fr)
+    clamp(38px, 6vh, 52px);
   align-items: center;
   justify-items: center;
-  padding: clamp(6px, 1vh, 10px);
+  padding: clamp(5px, 1vh, 8px);
   overflow: hidden;
   box-shadow: 0 1px 8px rgba(0,0,0,.04);
 }
@@ -319,11 +318,11 @@ button {
 }
 
 .cardSpeak {
-  font-size: clamp(9px, 1.35vw, 13px);
-  font-weight: 700;
+  font-size: clamp(10px, 1.8vw, 14px);
+  font-weight: 800;
   line-height: 1;
   white-space: nowrap;
-  max-width: 94%;
+  max-width: 90%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -341,18 +340,18 @@ button {
 .cardImageBox .noImage {
   width: 100%;
   height: 100%;
+  max-height: var(--choice-img-h);
   object-fit: contain;
   object-position: center center;
   display: block;
 }
 
 .card .label {
-  font-size: clamp(17px, 2.8vw, 25px);
+  font-size: clamp(18px, 3.6vw, 26px);
   font-weight: 900;
   line-height: 1.08;
   text-align: center;
   max-width: 100%;
-  overflow-wrap: anywhere;
 }
 
 .cardsEmpty {
@@ -362,9 +361,9 @@ button {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: var(--bg);
+  background: #fffaf0;
   color: #8b8b8b;
-  font-size: clamp(14px, 2.2vw, 18px);
+  font-size: clamp(14px, 2.5vw, 18px);
   font-weight: 700;
   text-align: center;
   white-space: pre-line;
@@ -372,16 +371,16 @@ button {
 
 /* 페이지 점 */
 .pageDots {
-  height: clamp(18px, 3vh, 26px);
+  height: clamp(18px, 3.5vh, 26px);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(5px, 0.8vw, 8px);
+  gap: clamp(5px, 1vw, 8px);
 }
 
 .dot {
-  width: clamp(10px, 1.7vw, 17px);
-  height: clamp(10px, 1.7vw, 17px);
+  width: clamp(10px, 2.2vw, 17px);
+  height: clamp(10px, 2.2vw, 17px);
   border-radius: 50%;
   background: #e4e4e4;
 }
@@ -392,7 +391,7 @@ button {
 
 .dotArrow {
   color: #d0d0d0;
-  font-size: clamp(24px, 4vw, 38px);
+  font-size: clamp(24px, 5vw, 38px);
   line-height: 1;
   font-weight: 900;
 }
@@ -401,18 +400,18 @@ button {
 .categoryBar {
   height: var(--cat-h);
   display: flex;
-  gap: clamp(8px, 1.2vw, 12px);
+  gap: clamp(7px, 1.4vw, 10px);
   overflow-x: auto;
   overflow-y: hidden;
-  padding: clamp(6px, 1vh, 8px) 4px;
-  background: var(--top-bg);
-  border: 2px solid var(--line);
+  padding: clamp(6px, 1.1vh, 8px) 4px;
+  background: var(--soft-yellow);
+  border: 2px solid var(--line-yellow);
   border-bottom: 0;
   border-radius: 18px 18px 0 0;
 }
 
 .catTab {
-  flex: 0 0 clamp(84px, 13.5vw, 112px);
+  flex: 0 0 clamp(82px, 15vw, 106px);
   height: calc(var(--cat-h) - 18px);
   min-height: 56px;
   border-radius: 18px;
@@ -422,7 +421,7 @@ button {
   grid-template-rows: 1fr 1fr;
   align-items: center;
   justify-items: center;
-  font-size: clamp(16px, 2.6vw, 21px);
+  font-size: clamp(16px, 3vw, 21px);
   font-weight: 900;
 }
 
@@ -432,7 +431,7 @@ button {
 }
 
 .catIcon {
-  font-size: clamp(22px, 3.5vw, 28px);
+  font-size: clamp(22px, 4vw, 28px);
   line-height: 1;
 }
 
@@ -543,28 +542,32 @@ hr {
 
 .boardView {
   white-space: pre-wrap;
-  background: var(--bg);
+  background: #fffaf0;
   border: 1px solid #eee;
   border-radius: 16px;
   padding: 12px;
   min-height: 80px;
 }
 
-/* 세로 태블릿/Galaxy Tab */
+/* 태블릿 세로처럼 폭은 좁고 높이가 긴 화면 */
 @media (max-aspect-ratio: 3/4) {
   :root {
-    --sentence-card-w: clamp(170px, 31vw, 240px);
-    --sentence-card-h: clamp(210px, 27vh, 280px);
-    --choice-card-w: clamp(126px, 22vw, 165px);
-    --choice-card-h: clamp(155px, 21vh, 190px);
+    --sentence-card-w: clamp(150px, 34vw, 230px);
+    --sentence-card-h: clamp(180px, 28vh, 270px);
+    --choice-card-w: clamp(118px, 23vw, 160px);
+    --choice-card-h: clamp(148px, 21vh, 190px);
   }
 
   .aacLayout {
     grid-template-rows:
       var(--search-h)
-      minmax(230px, 42fr)
-      minmax(190px, 34fr)
+      minmax(210px, 38fr)
+      minmax(180px, 38fr)
       var(--cat-h);
+  }
+
+  .sentencePanel {
+    padding-top: clamp(48px, 6vh, 60px);
   }
 }
 
@@ -573,29 +576,29 @@ hr {
   :root {
     --top-h: 54px;
     --search-h: 40px;
-    --cat-h: 64px;
-    --sentence-card-w: clamp(145px, 22vw, 230px);
-    --sentence-card-h: clamp(150px, 28vh, 220px);
-    --choice-card-w: clamp(112px, 15vw, 160px);
-    --choice-card-h: clamp(120px, 21vh, 168px);
-  }
-
-  .aacLayout {
-    grid-template-rows:
-      var(--search-h)
-      minmax(160px, 39fr)
-      minmax(120px, 30fr)
-      var(--cat-h);
-    gap: 5px;
+    --cat-h: 62px;
+    --sentence-card-w: clamp(130px, 20vw, 230px);
+    --sentence-card-h: clamp(150px, 28vh, 230px);
+    --choice-card-w: clamp(110px, 15vw, 160px);
+    --choice-card-h: clamp(120px, 22vh, 170px);
   }
 
   .topbar h1 {
     font-size: clamp(20px, 3vw, 28px);
   }
 
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h)
+      minmax(160px, 38fr)
+      minmax(120px, 31fr)
+      var(--cat-h);
+    gap: 5px;
+  }
+
   .sentencePanel {
     padding-top: 42px;
-    padding-bottom: 30px;
+    padding-bottom: 32px;
   }
 
   .clearSentenceBtn {
@@ -605,155 +608,40 @@ hr {
 
   .sentenceText {
     bottom: 5px;
+    font-size: clamp(16px, 2.6vw, 22px);
+  }
+
+  .catTab {
+    border-radius: 14px;
   }
 }
 
-/* 아주 작은 휴대폰 */
+/* 매우 작은 휴대폰 */
 @media (max-width: 390px) {
   :root {
-    --sentence-card-w: 170px;
-    --sentence-card-h: 210px;
-    --choice-card-w: 126px;
-    --choice-card-h: 158px;
+    --sentence-card-w: 180px;
+    --sentence-card-h: 220px;
+    --choice-card-w: 128px;
+    --choice-card-h: 160px;
   }
 }
 
+/* SIEL FINAL COMPLETE 20260628 */
 
-/* FINAL SCREEN OVERRIDE 20260626
-   기준: 사용자가 보내준 최종 시안.
-   문장카드: 소리값 제거, 그림명만 작게, 그림 영역 확대.
-*/
-.sentenceSpeak {
-  display: none !important;
-}
-
-.sentenceChip {
-  background: #fffdf2 !important;
-  grid-template-rows: minmax(0, 4.25fr) minmax(24px, 0.75fr) !important;
-  padding: clamp(8px, 1.3vh, 14px) !important;
-}
-
-.sentenceImageBox {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  padding: clamp(2px, .45vh, 5px) !important;
-  display: grid !important;
-  place-items: center !important;
-  overflow: hidden !important;
-}
-
-.sentenceImageBox img,
-.sentenceImageBox .noImage {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  display: block !important;
-}
-
-.sentenceLabel {
-  font-size: clamp(16px, 2.1vw, 22px) !important;
-  line-height: 1.05 !important;
-  font-weight: 900 !important;
-  width: 100% !important;
-  text-align: center !important;
-  overflow-wrap: anywhere !important;
-}
-
-.sentenceText {
-  font-size: clamp(17px, 2.4vw, 23px) !important;
-  font-weight: 800 !important;
-}
-
-/* 아래 선택 카드: 시안처럼 흰색 유지, 선택 테두리 #A6A6A6 */
-.card {
-  background: #fff !important;
-  grid-template-rows: minmax(13px, 0.55fr) minmax(0, 4.3fr) minmax(28px, 0.95fr) !important;
-}
-
-.card.selectedCard {
-  border: 3px solid #A6A6A6 !important;
-}
-
-.cardSpeak {
-  font-size: clamp(9px, 1.25vw, 12px) !important;
-  max-width: 94% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-.card .label {
-  font-size: clamp(16px, 2.55vw, 23px) !important;
-  line-height: 1.05 !important;
-}
-
-.cardImageBox img,
-.cardImageBox .noImage {
-  object-fit: contain !important;
-  object-position: center center !important;
-}
-
-/* FINAL NAMES ONLY 20260626
-   그림에는 그림 이름만 표시합니다.
-   소리값은 화면에 표시하지 않고, 관리 저장 시 그림 이름과 동일하게 저장됩니다.
-*/
+/* 화면에는 그림 이름만 표시, 소리값은 내부 저장용 */
+.cardSpeak,
 .sentenceSpeak,
-.cardSpeak {
-  display: none !important;
-}
-
-.card {
-  grid-template-rows: minmax(0, 4.6fr) minmax(30px, 0.9fr) !important;
-}
-
-.sentenceChip {
-  grid-template-rows: minmax(0, 4.4fr) minmax(26px, 0.8fr) !important;
-}
-
-.cardImageBox,
-.sentenceImageBox {
-  padding: clamp(2px, .45vh, 6px) !important;
-}
-
-.cardImageBox img,
-.cardImageBox .noImage,
-.sentenceImageBox img,
-.sentenceImageBox .noImage {
-  object-fit: contain !important;
-  object-position: center center !important;
-}
-
-.card .label {
-  font-size: clamp(16px, 2.55vw, 23px) !important;
-  line-height: 1.05 !important;
-}
-
-.sentenceLabel {
-  font-size: clamp(16px, 2.1vw, 22px) !important;
-  line-height: 1.05 !important;
-}
-
-/* 관리 화면: 소리 문장은 자동으로 그림 이름과 동일 */
-label[for="cardSpeak"],
 #cardSpeak {
   display: none !important;
 }
 
-.soundLabelHidden,
-#cardSpeak {
+.soundLabelHidden {
   display: none !important;
 }
-.soundAutoNotice {
-  margin: 2px 0 8px;
-  color: #777;
-  font-size: 14px;
-}
 
-/* ADMIN FINAL 20260627 */
+/* 관리자 최종 화면 */
 #adminDialog {
-  width: min(92vw, 680px);
+  width: min(92vw, 720px);
   border-radius: 22px;
   padding: 18px;
 }
@@ -886,6 +774,79 @@ label[for="cardSpeak"],
   font-weight: 900;
 }
 
+/* 카테고리 이름·순서 관리 */
+.categoryManager {
+  margin: 8px 0 18px;
+  padding: 10px 0 0;
+  border-top: 1px solid #f0d98e;
+}
+
+.categoryManager summary {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.categoryManageList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoryManageItem {
+  display: grid;
+  grid-template-columns: 42px minmax(100px, 1fr) 42px 48px 48px 86px 62px;
+  align-items: center;
+  gap: 6px;
+}
+
+.catManageIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff7d6;
+  font-size: 22px;
+}
+
+.catRenameInput {
+  height: 42px !important;
+  min-width: 0;
+  font-size: 17px !important;
+  font-weight: 800;
+}
+
+.catCardCount {
+  color: #777;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.categoryManageItem button {
+  height: 40px;
+  border-radius: 12px;
+  background: #eee;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.categoryManageItem button:disabled {
+  opacity: .35;
+}
+
+.syncStatus {
+  margin: 12px 0 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff7d6;
+  color: #666;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 .backupRow {
   display: flex;
   gap: 8px;
@@ -902,7 +863,68 @@ label[for="cardSpeak"],
   font-weight: 900;
 }
 
-@media (max-width: 520px) {
+/* Galaxy 미니탭 같은 낮은 가로형 화면에서만 보정: 휴대폰 비율은 건드리지 않음 */
+@media (orientation: landscape) and (max-height: 720px) {
+  :root {
+    --choice-card-h: clamp(112px, 18vh, 150px);
+    --sentence-card-h: clamp(115px, 25vh, 175px);
+  }
+
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h)
+      minmax(150px, 40fr)
+      minmax(110px, 26fr)
+      var(--cat-h);
+  }
+
+  .sentencePanel {
+    padding:
+      clamp(36px, 5vh, 48px)
+      clamp(16px, 2vw, 24px)
+      clamp(28px, 4vh, 38px);
+  }
+
+  .sentenceChip {
+    grid-template-rows: minmax(0, 4.8fr) minmax(20px, .75fr) !important;
+    padding: 6px !important;
+  }
+
+  .card {
+    grid-template-rows: minmax(0, 4.9fr) minmax(22px, .8fr) !important;
+    padding: 6px !important;
+  }
+
+  .cardSpeak,
+  .sentenceSpeak {
+    display: none !important;
+  }
+
+  .cardImageBox,
+  .sentenceImageBox {
+    padding: 0 !important;
+  }
+
+  .cardImageBox img,
+  .sentenceImageBox img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  .card .label {
+    font-size: clamp(14px, 2.1vw, 18px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(14px, 2vw, 18px) !important;
+    line-height: 1.02 !important;
+  }
+}
+
+@media (max-width: 640px) {
   .adminRow {
     grid-template-columns: 1fr;
     gap: 6px;
@@ -921,85 +943,1140 @@ label[for="cardSpeak"],
     height: 44px;
     font-size: 14px !important;
   }
+
+  .categoryManageItem {
+    grid-template-columns: 36px minmax(90px, 1fr) 34px 40px 40px 68px 54px;
+    gap: 4px;
+  }
+
+  .catManageIcon {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  .catRenameInput {
+    height: 38px !important;
+    font-size: 15px !important;
+  }
+
+  .catCardCount {
+    font-size: 11px;
+  }
+
+  .categoryManageItem button {
+    height: 38px;
+    font-size: 12px;
+  }
 }
 
-/* FINAL ADMIN CATEGORY FILTER 20260628 */
-.adminCategoryFilterWrap {
-  border: 2px solid #F0E4AA;
-  border-radius: 18px;
-  background: #fffdf5;
-  padding: 12px;
-  margin: 12px 0 14px;
+/* SYNC OVERWRITE STATUS */
+.syncStatus{white-space:normal;}
+
+/* IMAGE DISPLAY FIX */
+.cardImageBox,.sentenceImageBox,.deleteThumb{overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important;}
+.cardImageBox img,.sentenceImageBox img,.deleteThumb img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;object-position:center center!important;display:block!important;}
+.card,.sentenceChip{overflow:hidden!important;}
+@media (orientation: portrait){
+  .card{grid-template-rows:minmax(0,4.7fr) minmax(26px,.9fr)!important;}
+  .sentenceChip{grid-template-rows:minmax(0,4.7fr) minmax(26px,.9fr)!important;}
+  .cardImageBox,.sentenceImageBox{padding:2px!important;min-height:0!important;}
+  .card .label{font-size:clamp(18px,5.1vw,28px)!important;line-height:1.04!important;}
+  .sentenceLabel{font-size:clamp(18px,5vw,28px)!important;line-height:1.04!important;}
 }
 
-.adminFilterTitle {
-  font-size: 15px;
-  font-weight: 900;
-  color: #777;
-  margin-bottom: 8px;
+
+/* PWA CARD FIX 20260628
+   설치 앱(PWA)에서 grid/flex 높이 계산 오류로 이미지 위쪽만 보이는 문제를 막기 위해
+   카드 내부를 flex column + 고정 이미지 비율로 재정의합니다. */
+
+/* 문장 선택 카드 */
+.sentenceChip {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-.adminCategoryFilterScroller {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
+.sentenceImageBox {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: clamp(2px, 0.4vw, 6px) !important;
+  box-sizing: border-box !important;
 }
 
-.adminCategoryFilterBtn {
-  min-width: 82px;
-  min-height: 58px;
-  border: 2px solid #E7DCA9;
-  border-radius: 15px;
-  background: white;
-  color: #222;
-  font-weight: 900;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  flex: 0 0 auto;
+.sentenceLabel {
+  flex: 0 0 auto !important;
+  min-height: clamp(22px, 3.2vh, 34px) !important;
+  max-height: clamp(28px, 4vh, 42px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  text-align: center !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  line-height: 1.05 !important;
 }
 
-.adminCategoryFilterBtn.active {
-  background: #FFD15C;
-  border-color: #D9B13F;
+/* 아래 선택 카드 */
+.card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-.adminCategoryFilterIcon {
-  font-size: 22px;
-  line-height: 1;
+.cardImageBox {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: clamp(2px, 0.4vw, 6px) !important;
+  box-sizing: border-box !important;
 }
 
-.adminCurrentCategoryHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 10px 2px;
-  padding: 8px 10px;
-  background: #fff8d7;
-  border-radius: 14px;
-  color: #555;
+.card .label {
+  flex: 0 0 auto !important;
+  min-height: clamp(24px, 3.4vh, 38px) !important;
+  max-height: clamp(34px, 5vh, 50px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  text-align: center !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  line-height: 1.05 !important;
 }
 
-.adminCurrentCategoryHeader strong {
-  font-size: 17px;
-  color: #222;
+/* 이미지 자체는 항상 전체가 보이도록 */
+.cardImageBox img,
+.sentenceImageBox img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
 }
 
-.adminCurrentCategoryHeader span,
+/* 소리값은 화면에서 숨김 */
+.cardSpeak,
+.sentenceSpeak {
+  display: none !important;
+}
+
+/* PWA/모바일 세로 화면: 그림 우선 */
+@media (orientation: portrait) {
+  .sentenceChip {
+    padding: clamp(7px, 1.5vw, 12px) !important;
+  }
+
+  .card {
+    padding: clamp(7px, 1.5vw, 12px) !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(17px, 4.5vw, 25px) !important;
+    min-height: clamp(24px, 3vh, 34px) !important;
+    max-height: clamp(34px, 4.5vh, 44px) !important;
+  }
+
+  .card .label {
+    font-size: clamp(18px, 4.9vw, 28px) !important;
+    min-height: clamp(28px, 3.5vh, 40px) !important;
+    max-height: clamp(38px, 5vh, 52px) !important;
+  }
+
+  .sentenceImageBox,
+  .cardImageBox {
+    padding: 2px !important;
+  }
+}
+
+/* Galaxy Tab / 낮은 가로형 화면: 기존 레이아웃은 유지하되 이미지 영역 고정 */
+@media (orientation: landscape) and (max-height: 720px) {
+  .sentenceLabel {
+    font-size: clamp(13px, 1.65vw, 18px) !important;
+    min-height: 20px !important;
+    max-height: 30px !important;
+  }
+
+  .card .label {
+    font-size: clamp(14px, 1.8vw, 19px) !important;
+    min-height: 22px !important;
+    max-height: 34px !important;
+  }
+
+  .sentenceImageBox,
+  .cardImageBox {
+    padding: 1px !important;
+  }
+}
+
+
+/* PWA HARD IMAGE LAYOUT FIX 20260628
+   설치 앱에서 카드 내부 grid/flex 높이 계산이 깨지는 문제를 피하기 위해
+   이미지와 글씨를 absolute 영역으로 강제 분리합니다. */
+
+.card,
+.sentenceChip {
+  position: relative !important;
+  display: block !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.cardImageBox,
+.sentenceImageBox {
+  position: absolute !important;
+  left: 8px !important;
+  right: 8px !important;
+  top: 8px !important;
+  bottom: clamp(34px, 22%, 56px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  width: auto !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.card .label,
+.sentenceLabel {
+  position: absolute !important;
+  left: 4px !important;
+  right: 4px !important;
+  bottom: 6px !important;
+  height: clamp(28px, 20%, 52px) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  word-break: keep-all !important;
+  line-height: 1.04 !important;
+  box-sizing: border-box !important;
+}
+
+.cardImageBox img,
+.sentenceImageBox img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* 소리값 숨김 */
+.cardSpeak,
+.sentenceSpeak {
+  display: none !important;
+}
+
+/* 휴대폰/설치앱 세로화면 */
+@media (orientation: portrait) {
+  .cardImageBox,
+  .sentenceImageBox {
+    left: 8px !important;
+    right: 8px !important;
+    top: 8px !important;
+    bottom: clamp(36px, 24%, 58px) !important;
+  }
+
+  .card .label,
+  .sentenceLabel {
+    height: clamp(32px, 22%, 58px) !important;
+  }
+
+  .card .label {
+    font-size: clamp(18px, 4.8vw, 27px) !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(17px, 4.5vw, 25px) !important;
+  }
+}
+
+/* 낮은 가로형 태블릿 */
+@media (orientation: landscape) and (max-height: 720px) {
+  .cardImageBox,
+  .sentenceImageBox {
+    left: 6px !important;
+    right: 6px !important;
+    top: 6px !important;
+    bottom: clamp(24px, 20%, 40px) !important;
+  }
+
+  .card .label,
+  .sentenceLabel {
+    bottom: 4px !important;
+    height: clamp(20px, 20%, 34px) !important;
+  }
+
+  .card .label {
+    font-size: clamp(13px, 1.7vw, 18px) !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(12px, 1.6vw, 17px) !important;
+  }
+}
+
+/* SENTENCE OFFLINE IMAGE FIX */
+.sentenceImageBox img,
+.cardImageBox img {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+
+/* STYLE TEXT FIX 20260628
+   요청 반영:
+   1) 문장 만들기 선택 카드 X 닫기 색상 #ECD27E
+   2) 문장 만들기 가운데 문장: 바탕체 18px, #A6A6A6
+*/
+
+/* 선택된 문장 카드의 X 닫기 버튼 */
+.sentenceChip .removeBtn,
+.sentenceChip .closeBtn,
+.sentenceChip button.removeBtn,
+.sentenceChip button.closeBtn,
+.sentenceChip .deleteSentenceBtn,
+.sentenceChip .sentenceRemove,
+.sentenceChip [data-remove],
+.sentenceChip .xBtn {
+  color: #ECD27E !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #ECD27E !important;
+}
+
+/* 문장 만들기 카드 안의 빨간 X가 일반 버튼/문자로 들어간 경우까지 보정 */
+.sentencePanel .removeBtn,
+.sentencePanel .closeBtn,
+.sentencePanel button.removeBtn,
+.sentencePanel button.closeBtn,
+.sentencePanel .deleteSentenceBtn,
+.sentencePanel .sentenceRemove,
+.sentencePanel [data-remove],
+.sentencePanel .xBtn {
+  color: #ECD27E !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #ECD27E !important;
+}
+
+/* 일부 버전에서 X가 svg/icon 색으로 들어간 경우 */
+.sentenceChip .removeBtn svg,
+.sentenceChip .closeBtn svg,
+.sentencePanel .removeBtn svg,
+.sentencePanel .closeBtn svg {
+  fill: #ECD27E !important;
+  stroke: #ECD27E !important;
+}
+
+/* 문장 만들기 가운데 문장 */
+.sentenceText,
+.sentenceOutput,
+.sentencePreview,
+.sentenceSummary,
+.sentenceLine,
+#sentenceText,
+#sentenceOutput,
+#sentencePreview,
+#sentenceSummary {
+  font-family: "Batang", "바탕", "BatangChe", "바탕체", serif !important;
+  font-size: 18px !important;
+  color: #A6A6A6 !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #A6A6A6 !important;
+}
+
+/* 현재 앱에서 가운데 문장이 특정 클래스 없이 패널 바로 아래 strong/div로 들어간 경우 대비 */
+.sentencePanel > .sentenceText,
+.sentencePanel > .sentenceOutput,
+.sentencePanel > .sentencePreview,
+.sentencePanel > .sentenceSummary,
+.sentencePanel > .sentenceLine,
+.sentenceArea > .sentenceText,
+.sentenceArea > .sentenceOutput,
+.sentenceArea > .sentencePreview,
+.sentenceArea > .sentenceSummary {
+  font-family: "Batang", "바탕", "BatangChe", "바탕체", serif !important;
+  font-size: 18px !important;
+  color: #A6A6A6 !important;
+  font-weight: 400 !important;
+}
+
+/* 선택 카드 안의 그림 이름은 기존대로 유지하고, 가운데 문장만 부드럽게 */
+.sentenceChip .sentenceLabel {
+  font-family: inherit;
+}
+
+/* 혹시 가운데 문장이 .sentenceLabel과 같은 이름으로 중복 적용되는 것을 방지 */
+.sentencePanel > .sentenceLabel:not(.sentenceChip .sentenceLabel) {
+  font-family: "Batang", "바탕", "BatangChe", "바탕체", serif !important;
+  font-size: 18px !important;
+  color: #A6A6A6 !important;
+  font-weight: 400 !important;
+}
+
+
+/* NARROW PHONE COMPACT 20260628
+   Z Fold 접은 화면/좁은 세로형 휴대폰에서 하단 카테고리가 잘리지 않도록
+   문장 영역, 카드 영역, 페이지 점, 하단 카테고리 간격을 compact하게 재배치합니다.
+   펼친 폴드/태블릿/노트북/가로 화면은 기존 비율 유지. */
+
+@media (orientation: portrait) and (max-width: 520px) {
+  :root {
+    --header-h: clamp(56px, 8.2vh, 72px);
+    --search-h: clamp(58px, 8vh, 70px);
+    --cat-h: clamp(74px, 10.2vh, 88px);
+    --choice-card-h: clamp(138px, 20.5vh, 174px);
+    --sentence-card-h: clamp(132px, 20vh, 170px);
+  }
+
+  html,
+  body,
+  #app {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .app,
+  .aacApp,
+  .main,
+  .page,
+  .wrap {
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .aacLayout {
+    height: calc(100dvh - var(--header-h)) !important;
+    max-height: calc(100dvh - var(--header-h)) !important;
+    display: grid !important;
+    grid-template-rows:
+      var(--search-h)
+      minmax(205px, 32vh)
+      minmax(170px, 25vh)
+      minmax(18px, 3vh)
+      var(--cat-h) !important;
+    row-gap: clamp(4px, 0.8vh, 8px) !important;
+    overflow: hidden !important;
+  }
+
+  .searchRow,
+  .searchArea {
+    height: var(--search-h) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: clamp(5px, 0.8vh, 8px) clamp(10px, 2vw, 14px) !important;
+  }
+
+  .sentencePanel {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 clamp(8px, 2vw, 14px) !important;
+    padding:
+      clamp(34px, 4.5vh, 46px)
+      clamp(8px, 2vw, 14px)
+      clamp(22px, 3vh, 32px) !important;
+    overflow: hidden !important;
+  }
+
+  .sentenceList,
+  .sentenceCards,
+  .selectedCards,
+  .sentenceScroll {
+    height: calc(100% - 34px) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: clamp(8px, 2.2vw, 14px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .sentenceChip {
+    width: clamp(132px, 39vw, 158px) !important;
+    height: clamp(140px, 20.2vh, 166px) !important;
+    min-width: clamp(132px, 39vw, 158px) !important;
+    flex: 0 0 auto !important;
+  }
+
+  .sentenceText,
+  .sentenceOutput,
+  .sentencePreview,
+  .sentenceSummary,
+  .sentenceLine,
+  #sentenceText,
+  #sentenceOutput,
+  #sentencePreview,
+  #sentenceSummary,
+  .sentencePanel > .sentenceLabel:not(.sentenceChip .sentenceLabel) {
+    font-size: 18px !important;
+    margin-top: clamp(2px, 0.4vh, 5px) !important;
+    margin-bottom: 0 !important;
+    line-height: 1.18 !important;
+  }
+
+  .choiceArea,
+  .cardArea,
+  .cardsPanel,
+  .cardPanel {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 clamp(8px, 2vw, 14px) !important;
+    overflow: hidden !important;
+  }
+
+  .cardList,
+  .cards,
+  .choiceList,
+  .gridCards,
+  .cardScroll {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: clamp(8px, 2.2vw, 14px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 0 clamp(2px, 0.4vh, 4px) !important;
+  }
+
+  .card {
+    width: clamp(128px, 31vw, 156px) !important;
+    height: clamp(156px, 23vh, 184px) !important;
+    min-width: clamp(128px, 31vw, 156px) !important;
+    flex: 0 0 auto !important;
+  }
+
+  .pager,
+  .pageDots,
+  .pagination,
+  .dots {
+    height: clamp(18px, 3vh, 26px) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    height: var(--cat-h) !important;
+    min-height: var(--cat-h) !important;
+    max-height: var(--cat-h) !important;
+    margin: 0 clamp(6px, 1.6vw, 10px) clamp(4px, 0.8vh, 8px) !important;
+    padding: clamp(5px, 0.8vh, 8px) clamp(6px, 1.6vw, 10px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    align-items: center !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn {
+    height: clamp(58px, 8.5vh, 72px) !important;
+    min-width: clamp(84px, 23vw, 104px) !important;
+    padding: 4px 8px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .categoryBtn .icon,
+  .catBtn .icon,
+  .tabBtn .icon {
+    font-size: clamp(20px, 5vw, 27px) !important;
+    line-height: 1 !important;
+  }
+
+  .categoryBtn .label,
+  .catBtn .label,
+  .tabBtn .label {
+    font-size: clamp(17px, 4.2vw, 22px) !important;
+    line-height: 1.05 !important;
+  }
+}
+
+/* 높이가 특히 작은 세로 화면: 한 번 더 압축 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h)
+      minmax(188px, 30vh)
+      minmax(152px, 23vh)
+      minmax(16px, 2.6vh)
+      var(--cat-h) !important;
+    row-gap: 3px !important;
+  }
+
+  .sentencePanel {
+    padding-top: 34px !important;
+    padding-bottom: 20px !important;
+  }
+
+  .sentenceChip {
+    height: clamp(126px, 19vh, 150px) !important;
+    width: clamp(122px, 37vw, 146px) !important;
+    min-width: clamp(122px, 37vw, 146px) !important;
+  }
+
+  .card {
+    height: clamp(140px, 21.5vh, 166px) !important;
+    width: clamp(116px, 30vw, 142px) !important;
+    min-width: clamp(116px, 30vw, 142px) !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    margin-bottom: 3px !important;
+  }
+}
+
+
+/* EMERGENCY RESTORE 20260628
+   앱 표시 복구용. 구조 변경 없음. */
+
+
+/* RESPONSIVE CATEGORY 20260628
+   좁은 휴대폰/Z Fold 접힌 화면: 카테고리 2줄 자동 배치
+   Z Fold 펼친 화면/태블릿 가로/노트북: 기존처럼 1줄 가로 스크롤 유지
+   JS 구조 변경 없이 CSS만 적용합니다. */
+
+/* 기본/넓은 화면은 기존 1줄 유지 */
+.categoryBar,
+.bottomCategories,
+.catBar,
+.tabs {
+  scroll-behavior: smooth;
+}
+
+/* 좁은 세로 화면 전용 */
+@media (orientation: portrait) and (max-width: 520px) {
+  /* 전체 화면은 카테고리 2줄 공간을 확보하되 너무 촘촘하지 않게 */
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h, clamp(58px, 8vh, 70px))
+      minmax(196px, 31vh)
+      minmax(160px, 23.5vh)
+      minmax(18px, 2.8vh)
+      clamp(132px, 17.5vh, 154px) !important;
+    row-gap: clamp(5px, 0.9vh, 9px) !important;
+  }
+
+  /* 카테고리 영역: 2줄 wrap */
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    height: clamp(128px, 17.5vh, 154px) !important;
+    min-height: clamp(128px, 17.5vh, 154px) !important;
+    max-height: clamp(128px, 17.5vh, 154px) !important;
+
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-content: center !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+
+    gap: clamp(6px, 1.5vw, 10px) clamp(7px, 1.8vw, 11px) !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    margin: 0 clamp(7px, 1.8vw, 12px) clamp(5px, 0.9vh, 8px) !important;
+    padding: clamp(7px, 1vh, 10px) clamp(7px, 1.8vw, 11px) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 카테고리 버튼: 2줄에 자연스럽게 들어가도록 */
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    height: clamp(54px, 7.2vh, 66px) !important;
+    min-height: clamp(54px, 7.2vh, 66px) !important;
+    max-height: clamp(54px, 7.2vh, 66px) !important;
+
+    min-width: clamp(78px, 21.5vw, 98px) !important;
+    width: clamp(78px, 21.5vw, 98px) !important;
+    flex: 0 0 auto !important;
+
+    padding: 4px 6px !important;
+    box-sizing: border-box !important;
+  }
+
+  .categoryBtn .icon,
+  .catBtn .icon,
+  .tabBtn .icon,
+  .categoryBar button .icon,
+  .bottomCategories button .icon,
+  .catBar button .icon,
+  .tabs button .icon {
+    font-size: clamp(18px, 4.7vw, 25px) !important;
+    line-height: 1 !important;
+  }
+
+  .categoryBtn .label,
+  .catBtn .label,
+  .tabBtn .label,
+  .categoryBar button .label,
+  .bottomCategories button .label,
+  .catBar button .label,
+  .tabs button .label {
+    font-size: clamp(15px, 3.9vw, 20px) !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+  }
+
+  /* 문장 영역과 카드 영역 사이가 너무 벌어지지 않도록 */
+  .sentencePanel {
+    margin-bottom: clamp(3px, 0.7vh, 7px) !important;
+  }
+
+  .choiceArea,
+  .cardArea,
+  .cardsPanel,
+  .cardPanel {
+    margin-top: clamp(2px, 0.5vh, 6px) !important;
+    margin-bottom: clamp(2px, 0.5vh, 6px) !important;
+  }
+
+  .pager,
+  .pageDots,
+  .pagination,
+  .dots {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+}
+
+/* 아주 낮은 세로 화면에서는 카테고리 2줄은 유지하되 버튼을 살짝 줄임 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h, clamp(54px, 7.6vh, 66px))
+      minmax(182px, 29vh)
+      minmax(146px, 21.5vh)
+      minmax(16px, 2.4vh)
+      clamp(118px, 16vh, 138px) !important;
+    row-gap: 4px !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    height: clamp(118px, 16vh, 138px) !important;
+    min-height: clamp(118px, 16vh, 138px) !important;
+    max-height: clamp(118px, 16vh, 138px) !important;
+    gap: 5px 6px !important;
+    padding: 6px 7px !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    height: clamp(50px, 6.8vh, 60px) !important;
+    min-height: clamp(50px, 6.8vh, 60px) !important;
+    max-height: clamp(50px, 6.8vh, 60px) !important;
+    min-width: clamp(74px, 21vw, 92px) !important;
+    width: clamp(74px, 21vw, 92px) !important;
+  }
+}
+
+/* 넓은 화면/가로 화면은 한 줄 유지 */
+@media (orientation: landscape), (min-width: 521px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+}
+
+
+/* CATEGORY SCROLL FIX 20260628
+   좁은 화면에서 카테고리 2줄은 유지하되,
+   flex-wrap 때문에 아래쪽이 잘리고 움직이지 않는 문제를 해결합니다.
+   2줄 + 가로 스크롤 방식으로 변경합니다. */
+
+@media (orientation: portrait) and (max-width: 520px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-template-rows: repeat(2, clamp(54px, 7.2vh, 66px)) !important;
+    grid-auto-columns: clamp(82px, 22.5vw, 102px) !important;
+
+    gap: clamp(7px, 1.6vw, 11px) clamp(8px, 1.9vw, 12px) !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+
+    align-items: center !important;
+    align-content: center !important;
+    justify-content: flex-start !important;
+
+    height: clamp(132px, 17.8vh, 158px) !important;
+    min-height: clamp(132px, 17.8vh, 158px) !important;
+    max-height: clamp(132px, 17.8vh, 158px) !important;
+
+    padding: clamp(8px, 1vh, 11px) clamp(8px, 1.8vw, 12px) !important;
+    margin: 0 clamp(7px, 1.8vw, 12px) clamp(5px, 0.9vh, 8px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(82px, 22.5vw, 102px) !important;
+    min-width: clamp(82px, 22.5vw, 102px) !important;
+    max-width: clamp(82px, 22.5vw, 102px) !important;
+
+    height: clamp(54px, 7.2vh, 66px) !important;
+    min-height: clamp(54px, 7.2vh, 66px) !important;
+    max-height: clamp(54px, 7.2vh, 66px) !important;
+
+    flex: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 스크롤바가 공간을 차지하지 않게 */
+  .categoryBar::-webkit-scrollbar,
+  .bottomCategories::-webkit-scrollbar,
+  .catBar::-webkit-scrollbar,
+  .tabs::-webkit-scrollbar {
+    height: 0 !important;
+    display: none !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    scrollbar-width: none !important;
+  }
+}
+
+/* 아주 낮은 세로 화면에서도 2줄 스크롤 유지 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    grid-template-rows: repeat(2, clamp(50px, 6.8vh, 60px)) !important;
+    grid-auto-columns: clamp(76px, 21.5vw, 94px) !important;
+    height: clamp(120px, 16.2vh, 140px) !important;
+    min-height: clamp(120px, 16.2vh, 140px) !important;
+    max-height: clamp(120px, 16.2vh, 140px) !important;
+    gap: 6px 7px !important;
+    padding: 6px 7px !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(76px, 21.5vw, 94px) !important;
+    min-width: clamp(76px, 21.5vw, 94px) !important;
+    max-width: clamp(76px, 21.5vw, 94px) !important;
+    height: clamp(50px, 6.8vh, 60px) !important;
+    min-height: clamp(50px, 6.8vh, 60px) !important;
+    max-height: clamp(50px, 6.8vh, 60px) !important;
+  }
+}
+
+/* 넓은 화면/가로 화면은 기존처럼 한 줄 */
+@media (orientation: landscape), (min-width: 521px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    touch-action: pan-x !important;
+  }
+}
+
+
+/* CATEGORY 3 ROW FIX 20260628
+   좁은 휴대폰/Z Fold 접은 화면에서는 카테고리를 3줄 자동 배치 + 좌우 스크롤로 표시합니다.
+   넓은 화면/가로 화면/태블릿/노트북은 기존처럼 1줄 유지합니다. */
+
+@media (orientation: portrait) and (max-width: 520px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h, clamp(58px, 8vh, 70px))
+      minmax(178px, 28.5vh)
+      minmax(142px, 21vh)
+      minmax(16px, 2.4vh)
+      clamp(174px, 23vh, 206px) !important;
+    row-gap: clamp(4px, 0.75vh, 7px) !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-template-rows: repeat(3, clamp(50px, 6.8vh, 62px)) !important;
+    grid-auto-columns: clamp(82px, 22.5vw, 104px) !important;
+
+    gap: clamp(6px, 1.4vw, 10px) clamp(8px, 1.8vw, 12px) !important;
+
+    height: clamp(174px, 23vh, 206px) !important;
+    min-height: clamp(174px, 23vh, 206px) !important;
+    max-height: clamp(174px, 23vh, 206px) !important;
+
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x !important;
+
+    align-items: center !important;
+    align-content: center !important;
+    justify-content: flex-start !important;
+
+    margin: 0 clamp(7px, 1.8vw, 12px) clamp(5px, 0.9vh, 8px) !important;
+    padding: clamp(8px, 1vh, 11px) clamp(8px, 1.8vw, 12px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(82px, 22.5vw, 104px) !important;
+    min-width: clamp(82px, 22.5vw, 104px) !important;
+    max-width: clamp(82px, 22.5vw, 104px) !important;
+
+    height: clamp(50px, 6.8vh, 62px) !important;
+    min-height: clamp(50px, 6.8vh, 62px) !important;
+    max-height: clamp(50px, 6.8vh, 62px) !important;
+
+    flex: none !important;
+    box-sizing: border-box !important;
+    padding: 3px 6px !important;
+  }
+
+  .categoryBtn .icon,
+  .catBtn .icon,
+  .tabBtn .icon,
+  .categoryBar button .icon,
+  .bottomCategories button .icon,
+  .catBar button .icon,
+  .tabs button .icon {
+    font-size: clamp(17px, 4.4vw, 23px) !important;
+    line-height: 1 !important;
+  }
+
+  .categoryBtn .label,
+  .catBtn .label,
+  .tabBtn .label,
+  .categoryBar button .label,
+  .bottomCategories button .label,
+  .catBar button .label,
+  .tabs button .label {
+    font-size: clamp(14px, 3.6vw, 19px) !important;
+    line-height: 1.05 !important;
+    white-space: nowrap !important;
+  }
+
+  .categoryBar::-webkit-scrollbar,
+  .bottomCategories::-webkit-scrollbar,
+  .catBar::-webkit-scrollbar,
+  .tabs::-webkit-scrollbar {
+    height: 0 !important;
+    display: none !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    scrollbar-width: none !important;
+  }
+}
+
+/* 화면 높이가 낮은 좁은 휴대폰에서도 3줄 유지하되 버튼을 조금 줄임 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h, clamp(54px, 7.6vh, 66px))
+      minmax(166px, 26vh)
+      minmax(130px, 19.5vh)
+      minmax(14px, 2vh)
+      clamp(156px, 21vh, 184px) !important;
+    row-gap: 3px !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    grid-template-rows: repeat(3, clamp(46px, 6.1vh, 56px)) !important;
+    grid-auto-columns: clamp(76px, 21.5vw, 96px) !important;
+    height: clamp(156px, 21vh, 184px) !important;
+    min-height: clamp(156px, 21vh, 184px) !important;
+    max-height: clamp(156px, 21vh, 184px) !important;
+    gap: 5px 7px !important;
+    padding: 6px 7px !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn,
+  .categoryBar button,
+  .bottomCategories button,
+  .catBar button,
+  .tabs button {
+    width: clamp(76px, 21.5vw, 96px) !important;
+    min-width: clamp(76px, 21.5vw, 96px) !important;
+    max-width: clamp(76px, 21.5vw, 96px) !important;
+    height: clamp(46px, 6.1vh, 56px) !important;
+    min-height: clamp(46px, 6.1vh, 56px) !important;
+    max-height: clamp(46px, 6.1vh, 56px) !important;
+  }
+}
+
+/* 넓은 화면/가로 화면은 반드시 한 줄 유지 */
+@media (orientation: landscape), (min-width: 521px) {
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    touch-action: pan-x !important;
+  }
+}
+
+
+/* IMAGE COMPRESS UPLOAD */
+.compressHint,
+.imageCompressHint {
+  font-size: 13px;
+  color: #888;
+  margin-top: 6px;
+}
+
+
+/* ADMIN IMAGE SIZE DISPLAY 20260628 */
 .adminImageSizeText {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #C6C6C6;
+  letter-spacing: -0.02em;
+  vertical-align: middle;
+}
+
+.adminPanel .adminImageSizeText,
+.adminContent .adminImageSizeText,
+.menuPanel .adminImageSizeText,
+.modal .adminImageSizeText {
   color: #C6C6C6 !important;
   font-size: 12px !important;
   font-weight: 400 !important;
 }
 
-.adminEmptyText {
-  color: #999;
-  text-align: center;
-  padding: 18px 0;
+.adminImageMetaLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ADMIN FLOW + PAGINATION FIX */
+#adminDialog .adminMenu {
+  display: none;
+}
+
+#adminDialog #adminPanel {
+  display: none;
+}
+
+#adminDialog #loginBtn {
+  display: block;
 }
 
 .adminPager {
@@ -1007,7 +2084,8 @@ label[for="cardSpeak"],
   align-items: center;
   justify-content: center;
   gap: 9px;
-  margin: 14px 0 8px;
+  margin: 16px 0 10px;
+  padding: 10px;
   color: #999;
   font-size: 14px;
 }
@@ -1017,10 +2095,303 @@ label[for="cardSpeak"],
   border-radius: 14px;
   background: #fffdf5;
   padding: 8px 12px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 800;
   color: #555;
 }
 
 .adminPager button:disabled {
   opacity: .35;
+}
+
+.adminImageSizeText {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: #C6C6C6 !important;
+  vertical-align: middle;
+}
+
+/* ROLE ADMIN FINAL UI 20260628 */
+.sielRoleOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(255, 250, 235, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  box-sizing: border-box;
+}
+
+.sielRoleCard {
+  width: min(92vw, 430px);
+  max-height: 92vh;
+  overflow: auto;
+  background: #fffdf5;
+  border: 3px solid #ECD27E;
+  border-radius: 26px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.14);
+  padding: 26px 22px 24px;
+  position: relative;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.sielRoleWide {
+  width: min(94vw, 620px);
+}
+
+.sielRoleCard h2 {
+  margin: 0 0 12px;
+  font-size: 25px;
+  font-weight: 900;
+  color: #222;
+}
+
+.sielRoleSub {
+  color: #888;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.sielRoleClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: 0;
+  background: transparent;
+  color: #ECD27E;
+  -webkit-text-fill-color: #ECD27E;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.sielRoleBack {
+  display: block;
+  border: 0;
+  background: transparent;
+  color: #999;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.sielRoleList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sielRoleSelectBtn,
+.sielRoleMenuBtn,
+.sielRolePrimary {
+  min-height: 54px;
+  border-radius: 18px;
+  border: 2px solid #E4C95F;
+  background: white;
+  color: #222;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.sielRolePrimary {
+  width: 100%;
+  margin-top: 12px;
+  background: #FFF4C7;
+}
+
+.sielRolePinInput,
+.sielRoleName,
+.sielRoleFile {
+  width: 100%;
+  min-height: 52px;
+  border: 2px solid #E9DCA6;
+  border-radius: 16px;
+  padding: 0 14px;
+  font-size: 20px;
+  text-align: center;
+  box-sizing: border-box;
+  background: white;
+  margin-top: 8px;
+}
+
+.sielRoleLabel {
+  display: block;
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 900;
+  color: #666;
+  text-align: left;
+}
+
+.sielRoleError {
+  color: #C96B6B;
+  min-height: 20px;
+  font-size: 14px;
+}
+
+.sielPendingList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sielPendingItem {
+  display: grid;
+  grid-template-columns: 58px 1fr 62px 62px;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid #f0e3b0;
+  padding: 8px 0;
+}
+
+.sielPendingItem img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: white;
+}
+
+.sielPendingInfo {
+  text-align: left;
+}
+
+.sielPendingInfo b {
+  display: block;
+  font-size: 14px;
+  color: #333;
+}
+
+.sielPendingInfo span {
+  display: block;
+  font-size: 12px;
+  color: #C6C6C6;
+}
+
+.sielPendingItem button {
+  min-height: 42px;
+  border-radius: 13px;
+  border: 1px solid #E4C95F;
+  background: #fffdf5;
+  font-weight: 800;
+}
+
+.sielRoleInfo {
+  text-align: left;
+  background: white;
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+
+/* UPLOAD BUTTON FIX */
+#adminDialog #adminPanel:not(.hidden) {
+  display: block;
+}
+#adminDialog #uploadPanel:not(.hidden) {
+  display: block;
+}
+#adminDialog #boardPanel.hidden,
+#adminDialog #uploadPanel.hidden,
+#adminDialog #adminPanel.hidden {
+  display: none !important;
+}
+
+/* CATEGORY ICON FIX */
+.categoryBtn .icon,
+.catBtn .icon,
+.tabBtn .icon,
+.categoryBar button .icon,
+.bottomCategories button .icon,
+.catBar button .icon,
+.tabs button .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* AUTO CATEGORY ICON */
+.categoryBtn .icon,
+.catBtn .icon,
+.tabBtn .icon,
+.categoryBar button .icon,
+.bottomCategories button .icon,
+.catBar button .icon,
+.tabs button .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* FINAL KB + TEACHER PERMISSION FIX */
+
+/* 일반 AAC 카드 안에서 KB/MB 표시가 들어와도 숨김.
+   관리자/선생님 화면의 용량 표시는 아래에서 다시 보이게 합니다. */
+.card em,
+.card small,
+.pictureCard em,
+.pictureCard small,
+.symbolCard em,
+.symbolCard small,
+.card .adminImageSizeText,
+.pictureCard .adminImageSizeText,
+.symbolCard .adminImageSizeText {
+  display: none !important;
+}
+
+/* 관리자/선생님 화면에서는 용량 표시 허용 */
+#adminDialog .adminImageSizeText,
+#sielRoleOverlay .adminImageSizeText,
+#sielRoleOverlay em,
+.sielTeacherRecentBox em {
+  display: inline !important;
+}
+
+.sielTeacherRecentBox {
+  margin-top: 16px;
+  padding: 12px;
+  border: 2px solid #F0E4AA;
+  border-radius: 18px;
+  background: rgba(255,255,255,.72);
+  text-align: left;
+}
+
+.sielTeacherRecentBox h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  text-align: center;
+  color: #555;
+}
+
+.sielTeacherRecentItem {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #F3E8B5;
+}
+
+.sielTeacherRecentItem img {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: white;
+}
+
+.sielTeacherRecentItem span {
+  font-size: 15px;
+  font-weight: 800;
+  color: #333;
+}
+
+.sielTeacherRecentItem em {
+  font-style: normal;
+  font-size: 12px;
+  color: #C6C6C6;
 }
