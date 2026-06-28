@@ -303,7 +303,7 @@ button {
   border: 2px solid #e4e4e4;
   display: grid;
   grid-template-rows:
-    clamp(18px, 3.2vh, 28px)
+    0
     minmax(0, 1fr)
     clamp(38px, 6vh, 52px);
   align-items: center;
@@ -318,13 +318,13 @@ button {
 }
 
 .cardSpeak {
-  font-size: clamp(10px, 1.8vw, 14px);
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-  max-width: 90%;
+  /* 화면에 보이지 않지만 접근성을 위해 유지 */
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .cardImageBox {
