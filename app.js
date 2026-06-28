@@ -101,42 +101,6 @@ function speak(text) {
   window.speechSynthesis.speak(u);
 }
 
-
-function imageDisplayUrl(card) {
-  const url = card && card.image ? String(card.image) : "";
-  if (!url || url.startsWith("data:")) return url;
-  const key = encodeURIComponent(String(card.updatedAt || card.storagePath || card.id || Date.now()));
-  return url + (url.includes("?") ? "&" : "?") + "sielImg=" + key;
-}
-function attachImageRepairHandlers() {
-  document.querySelectorAll("img[data-card-id]").forEach(img => {
-    if (img.dataset.repairAttached === "1") return;
-    img.dataset.repairAttached = "1";
-    img.addEventListener("error", () => {
-      const id = img.dataset.cardId;
-      const all = data.categories.flatMap(cat => cat.cards);
-      const card = all.find(c => c.id === id);
-      if (card && card.image) img.src = imageDisplayUrl({...card, updatedAt: Date.now()});
-    });
-  });
-}
-
-
-async function cacheCardImageBothUrls(card) {
-  if (!card || !card.image || !("caches" in window)) return;
-  try {
-    await forceRefreshImageCache(card.image, getCardVersion ? getCardVersion(card) : imageVersionKey(card));
-    await forceRefreshImageCache(imageDisplayUrl(card), getCardVersion ? getCardVersion(card) : imageVersionKey(card));
-  } catch (e) {
-    try {
-      await cacheImageUrl(card.image);
-      await cacheImageUrl(imageDisplayUrl(card));
-    } catch (err) {
-      console.warn("선택 그림 캐시 실패:", err);
-    }
-  }
-}
-
 function render() {
   renderSentence();
   renderCategoryBar();
@@ -166,7 +130,7 @@ function renderSentence() {
       <div class="sentenceSpeak">${escapeHtml(card.text)}</div>
       <button class="removeChip" type="button" aria-label="삭제">×</button>
       <div class="sentenceImageBox">
-        ${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="noImage"></div>`}
+        ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
       </div>
       <div class="sentenceLabel">${escapeHtml(card.text)}</div>
     `;
@@ -256,7 +220,7 @@ function renderCards() {
     el.innerHTML = `
       <div class="cardSpeak">${escapeHtml(card.text)}</div>
       <div class="cardImageBox">
-        ${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="noImage"></div>`}
+        ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
       </div>
       <div class="label">${escapeHtml(card.text)}</div>
     `;
@@ -560,7 +524,6 @@ async function syncLatestImagesFromCloud() {
   let done = 0;
   for (const card of cards) {
     await forceRefreshImageCache(card.image, getCardVersion(card));
-    await forceRefreshImageCache(imageDisplayUrl(card), getCardVersion(card));
     done += 1;
     if (done === 1 || done === cards.length || done % 3 === 0) {
       setSyncProgress(done, cards.length, "최신 그림 동기화 중");
@@ -584,7 +547,7 @@ async function warmUpImageCache() {
     });
 
     await Promise.allSettled(urls.slice(0, 700).map(url => cacheImageUrl(url)));
-    attachImageCacheOnLoad(); attachImageRepairHandlers();
+    attachImageCacheOnLoad();
   } catch (e) {
     console.warn("이미지 오프라인 저장 실패:", e);
   }
@@ -597,7 +560,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielCategory3Row20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielSyncOverwrite20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -626,7 +589,7 @@ function renderAdmin() {
       const row = document.createElement("div");
       row.className = "deleteItem";
       row.innerHTML = `
-        <div class="deleteThumb">${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
+        <div class="deleteThumb">${card.image ? `<img src="${card.image}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
         <button class="editCardBtn" type="button"><strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong></button>
         <button class="smallEditBtn" type="button">수정</button>
         <button class="deleteBtn" type="button">삭제</button>
@@ -670,6 +633,162 @@ function renderAdmin() {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
+
+
+// ===== 이미지 크롭 기능 =====
+let cropImageSrc = null;
+let cropResolve = null;
+let cropNaturalW = 0;
+let cropNaturalH = 0;
+let cropScale = 1;
+
+// 크롭박스 상태
+let cropBox = { x: 20, y: 20, w: 200, h: 200 };
+let dragState = null; // { type: 'move'|'resize', startX, startY, startBox }
+
+function openCropDialog(file) {
+  return new Promise((resolve) => {
+    cropResolve = resolve;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      cropImageSrc = e.target.result;
+      const img = new Image();
+      img.onload = () => {
+        cropNaturalW = img.naturalWidth;
+        cropNaturalH = img.naturalHeight;
+
+        const canvas = $("cropCanvas");
+        const container = $("cropContainer");
+        const maxW = Math.min(container.clientWidth || 340, 340);
+        const maxH = Math.min(window.innerHeight * 0.5, 340);
+
+        cropScale = Math.min(maxW / cropNaturalW, maxH / cropNaturalH, 1);
+        canvas.width = Math.round(cropNaturalW * cropScale);
+        canvas.height = Math.round(cropNaturalH * cropScale);
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // 초기 크롭박스: 중앙 정사각형
+        const size = Math.min(canvas.width, canvas.height) * 0.8;
+        cropBox = {
+          x: Math.round((canvas.width - size) / 2),
+          y: Math.round((canvas.height - size) / 2),
+          w: Math.round(size),
+          h: Math.round(size)
+        };
+        drawCropOverlay();
+        $("cropDialog").showModal();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function clampCropBox() {
+  const canvas = $("cropCanvas");
+  const minSize = 30;
+  cropBox.w = Math.max(minSize, Math.min(cropBox.w, canvas.width));
+  cropBox.h = Math.max(minSize, Math.min(cropBox.h, canvas.height));
+  cropBox.x = Math.max(0, Math.min(cropBox.x, canvas.width - cropBox.w));
+  cropBox.y = Math.max(0, Math.min(cropBox.y, canvas.height - cropBox.h));
+}
+
+function drawCropOverlay() {
+  clampCropBox();
+  const canvas = $("cropCanvas");
+  const box = $("cropBox");
+  const rect = canvas.getBoundingClientRect();
+  const container = $("cropContainer");
+  const cRect = container.getBoundingClientRect();
+
+  const offsetX = rect.left - cRect.left;
+  const offsetY = rect.top - cRect.top;
+
+  box.style.left = (offsetX + cropBox.x) + "px";
+  box.style.top = (offsetY + cropBox.y) + "px";
+  box.style.width = cropBox.w + "px";
+  box.style.height = cropBox.h + "px";
+}
+
+function getEventPos(e) {
+  const canvas = $("cropCanvas");
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: clientX - rect.left, y: clientY - rect.top };
+}
+
+$("cropBox").addEventListener("mousedown", startDrag);
+$("cropBox").addEventListener("touchstart", startDrag, { passive: false });
+
+function startDrag(e) {
+  e.preventDefault();
+  const pos = getEventPos(e);
+  dragState = { type: "move", startX: pos.x, startY: pos.y, startBox: { ...cropBox } };
+}
+
+document.addEventListener("mousemove", onDrag);
+document.addEventListener("touchmove", onDrag, { passive: false });
+document.addEventListener("mouseup", endDrag);
+document.addEventListener("touchend", endDrag);
+
+function onDrag(e) {
+  if (!dragState) return;
+  e.preventDefault();
+  const pos = getEventPos(e);
+  const dx = pos.x - dragState.startX;
+  const dy = pos.y - dragState.startY;
+
+  if (dragState.type === "move") {
+    cropBox.x = dragState.startBox.x + dx;
+    cropBox.y = dragState.startBox.y + dy;
+  }
+  drawCropOverlay();
+}
+
+function endDrag() { dragState = null; }
+
+// 캔버스 클릭으로 크롭박스 이동
+$("cropCanvas").addEventListener("click", (e) => {
+  const pos = getEventPos(e);
+  cropBox.x = pos.x - cropBox.w / 2;
+  cropBox.y = pos.y - cropBox.h / 2;
+  drawCropOverlay();
+});
+
+$("cropConfirmBtn").onclick = () => {
+  const outSize = 900;
+  const srcX = Math.round(cropBox.x / cropScale);
+  const srcY = Math.round(cropBox.y / cropScale);
+  const srcW = Math.round(cropBox.w / cropScale);
+  const srcH = Math.round(cropBox.h / cropScale);
+
+  const out = document.createElement("canvas");
+  out.width = outSize;
+  out.height = outSize;
+  const ctx = out.getContext("2d");
+
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outSize, outSize);
+    const dataUrl = out.toDataURL("image/jpeg", 0.78);
+    $("cropDialog").close();
+    if (cropResolve) { cropResolve(dataUrl); cropResolve = null; }
+  };
+  img.src = cropImageSrc;
+};
+
+$("cropCancelBtn").onclick = () => {
+  $("cropDialog").close();
+  if (cropResolve) { cropResolve(null); cropResolve = null; }
+};
+
+window.addEventListener("resize", () => {
+  if ($("cropDialog").open) drawCropOverlay();
+});
+// ===== 크롭 기능 끝 =====
 
 async function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -726,6 +845,23 @@ async function uploadImageToStorageIfReady(file, cardId) {
   return { image: url, storagePath: path };
 }
 
+
+async function uploadCroppedImageIfReady(dataUrl, cardId) {
+  if (!firebaseReady || !firebaseReady.getStorage) {
+    return { image: dataUrl, storagePath: "" };
+  }
+
+  const { getStorage, storageRef, uploadString, getDownloadURL } = firebaseReady;
+  const storage = getStorage();
+  const path = `aac-cards/${cardId}.jpg`;
+  const ref = storageRef(storage, path);
+
+  await uploadString(ref, dataUrl, "data_url");
+  const url = await getDownloadURL(ref);
+
+  return { image: url, storagePath: path };
+}
+
 async function deleteImageFromStorageIfReady(card) {
   if (!card || !card.storagePath || !firebaseReady || !firebaseReady.getStorage) return;
 
@@ -748,7 +884,12 @@ function openAdminTab(tab) {
   $("boardPanel").classList.toggle("hidden", tab !== "board");
 }
 
-$("menuBtn").onclick = () => $("adminDialog").showModal();
+$("menuBtn").onclick = () => {
+  // 다이얼로그 열 때마다 로그인 상태 초기화
+  $("adminPanel").classList.add("hidden");
+  $("pinInput").value = "";
+  $("adminDialog").showModal();
+};
 $("cancelEditBtn").onclick = () => resetEditMode();
 $("showUploadBtn").onclick = () => openAdminTab("upload");
 $("showBoardBtn").onclick = () => openAdminTab("board");
@@ -802,10 +943,13 @@ $("addCardBtn").onclick = async () => {
       card.speak = text;
 
       if (file) {
-        await deleteImageFromStorageIfReady(card);
-        const uploaded = await uploadImageToStorageIfReady(file, card.id);
-        card.image = uploaded.image;
-        card.storagePath = uploaded.storagePath || "";
+        const croppedDataUrl = await openCropDialog(file);
+        if (croppedDataUrl) {
+          await deleteImageFromStorageIfReady(card);
+          const uploaded = await uploadCroppedImageIfReady(croppedDataUrl, card.id);
+          card.image = uploaded.image;
+          card.storagePath = uploaded.storagePath || "";
+        }
       }
 
       sentenceCards = sentenceCards.map(c => c.id === card.id ? {
@@ -826,9 +970,12 @@ $("addCardBtn").onclick = async () => {
     let storagePath = "";
 
     if (file) {
-      const uploaded = await uploadImageToStorageIfReady(file, cardId);
-      image = uploaded.image;
-      storagePath = uploaded.storagePath || "";
+      const croppedDataUrl = await openCropDialog(file);
+      if (croppedDataUrl) {
+        const uploaded = await uploadCroppedImageIfReady(croppedDataUrl, cardId);
+        image = uploaded.image;
+        storagePath = uploaded.storagePath || "";
+      }
     }
 
     cat.cards.push({ id: cardId, text, speak: text, image, storagePath });
@@ -935,7 +1082,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielCategory3Row20260628");
+    const configModule = await import("./firebase-config.js?v=sielSyncOverwrite20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1020,103 +1167,3 @@ window.addEventListener("online", () => {
 window.addEventListener("offline", () => {
   updateSyncStatus("오프라인 모드: 이 기기에 저장된 그림으로 사용할 수 있어요.");
 });
-
-
-function hardFixPwaImageLayout() {
-  const fixOne = (card, imageSelector, labelSelector) => {
-    if (!card) return;
-    const imgBox = card.querySelector(imageSelector);
-    const label = card.querySelector(labelSelector);
-    if (!imgBox || !label) return;
-
-    const h = card.clientHeight || card.getBoundingClientRect().height || 0;
-    if (!h) return;
-
-    const labelH = Math.max(28, Math.min(52, Math.round(h * 0.22)));
-    const imageH = Math.max(40, h - labelH - 14);
-
-    card.style.display = "block";
-    card.style.position = "relative";
-    card.style.overflow = "hidden";
-    card.style.boxSizing = "border-box";
-
-    imgBox.style.position = "absolute";
-    imgBox.style.left = "8px";
-    imgBox.style.right = "8px";
-    imgBox.style.top = "8px";
-    imgBox.style.height = imageH + "px";
-    imgBox.style.display = "flex";
-    imgBox.style.alignItems = "center";
-    imgBox.style.justifyContent = "center";
-    imgBox.style.overflow = "hidden";
-    imgBox.style.padding = "0";
-    imgBox.style.boxSizing = "border-box";
-
-    label.style.position = "absolute";
-    label.style.left = "4px";
-    label.style.right = "4px";
-    label.style.bottom = "6px";
-    label.style.height = labelH + "px";
-    label.style.display = "flex";
-    label.style.alignItems = "center";
-    label.style.justifyContent = "center";
-    label.style.textAlign = "center";
-    label.style.overflow = "hidden";
-    label.style.lineHeight = "1.05";
-
-    imgBox.querySelectorAll("img").forEach(img => {
-      img.style.width = "100%";
-      img.style.height = "100%";
-      img.style.maxWidth = "100%";
-      img.style.maxHeight = "100%";
-      img.style.objectFit = "contain";
-      img.style.objectPosition = "center center";
-      img.style.display = "block";
-    });
-  };
-
-  document.querySelectorAll(".card").forEach(card => fixOne(card, ".cardImageBox", ".label"));
-  document.querySelectorAll(".sentenceChip").forEach(card => fixOne(card, ".sentenceImageBox", ".sentenceLabel"));
-}
-
-window.addEventListener("resize", () => setTimeout(hardFixPwaImageLayout, 80));
-window.addEventListener("orientationchange", () => setTimeout(hardFixPwaImageLayout, 250));
-setInterval(hardFixPwaImageLayout, 1200);
-
-requestAnimationFrame(hardFixPwaImageLayout);
-
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (!sessionStorage.getItem("siel_sw_reloaded_once")) {
-      sessionStorage.setItem("siel_sw_reloaded_once", "1");
-      window.location.reload();
-    }
-  });
-}
-
-
-document.addEventListener("click", (event) => {
-  const cardEl = event.target.closest(".card");
-  if (!cardEl || !navigator.onLine) return;
-  const img = cardEl.querySelector("img[data-card-id]");
-  const id = img && img.dataset.cardId;
-  if (!id) return;
-  const allCards = data.categories.flatMap(cat => cat.cards);
-  const card = allCards.find(c => c.id === id);
-  if (card) cacheCardImageBothUrls(card);
-}, true);
-
-
-function repairSentenceChipImagesToDisplayUrl() {
-  document.querySelectorAll(".sentenceChip img[data-card-id]").forEach(img => {
-    const id = img.dataset.cardId;
-    const card = sentenceCards.find(c => c.id === id) || data.categories.flatMap(cat => cat.cards).find(c => c.id === id);
-    if (!card) return;
-    const wanted = imageDisplayUrl(card);
-    if (wanted && img.getAttribute("src") !== wanted) {
-      img.setAttribute("src", wanted);
-    }
-  });
-}
-setInterval(repairSentenceChipImagesToDisplayUrl, 800);
