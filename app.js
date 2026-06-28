@@ -597,49 +597,10 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielAdminFinal20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielCategory3Row20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
-  }
-}
-
-
-/* ADMIN SIZE DISPLAY 20260628 */
-function formatImageSize(bytes) {
-  const n = Number(bytes || 0);
-  if (!n || Number.isNaN(n)) return "";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function getCardImageSizeText(card) {
-  if (!card) return "";
-  const size = card.compressedSize || card.imageSize || card.sizeBytes || card.fileSize || card.bytes || 0;
-  return formatImageSize(size);
-}
-
-function addImageSizeMetaToCard(card, originalFile, uploadFile) {
-  if (!card || !uploadFile) return card;
-  card.imageSize = uploadFile.size || card.imageSize || 0;
-  card.compressedSize = uploadFile.size || card.compressedSize || 0;
-  card.originalSize = originalFile && originalFile.size ? originalFile.size : (card.originalSize || 0);
-  card.imageType = uploadFile.type || card.imageType || "";
-  card.updatedAt = Date.now();
-  return card;
-}
-
-
-function applyLastUploadedImageSize(originalFile, uploadFile) {
-  try {
-    if (!uploadFile || !data || !data.categories) return;
-    const currentCat = data.categories.find(c => c.id === selectedCategoryId) || data.categories[0];
-    if (!currentCat || !currentCat.cards || !currentCat.cards.length) return;
-    const last = currentCat.cards[currentCat.cards.length - 1];
-    addImageSizeMetaToCard(last, originalFile, uploadFile);
-  } catch (e) {
-    console.warn("그림 크기 정보 저장 실패:", e);
   }
 }
 
@@ -747,140 +708,6 @@ async function fileToDataUrl(file) {
   });
 }
 
-
-/* IMAGE COMPRESS UPLOAD 20260628
-   관리자에서 그림을 올릴 때 긴 변을 줄이고 JPEG/WebP로 압축해 업로드합니다.
-   PNG 투명 배경은 투명 보존을 위해 PNG로 유지합니다. */
-const SIEL_IMAGE_COMPRESS_CONFIG = {
-  maxSide: 1100,
-  jpegQuality: 0.84,
-  webpQuality: 0.82
-};
-
-function supportsWebPCompression() {
-  try {
-    const canvas = document.createElement("canvas");
-    canvas.width = 1;
-    canvas.height = 1;
-    return canvas.toDataURL("image/webp").startsWith("data:image/webp");
-  } catch (e) {
-    return false;
-  }
-}
-
-function fileToImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(img);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("이미지를 읽을 수 없습니다."));
-    };
-    img.src = url;
-  });
-}
-
-function canvasToBlob(canvas, type, quality) {
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob), type, quality);
-  });
-}
-
-async function compressImageFile(file) {
-  if (!file || !file.type || !file.type.startsWith("image/")) return file;
-
-  // SVG/GIF는 애니메이션/벡터 특성 때문에 그대로 둡니다.
-  if (file.type.includes("svg") || file.type.includes("gif")) return file;
-
-  try {
-    const img = await fileToImage(file);
-    const maxSide = SIEL_IMAGE_COMPRESS_CONFIG.maxSide;
-    const originalW = img.naturalWidth || img.width;
-    const originalH = img.naturalHeight || img.height;
-
-    if (!originalW || !originalH) return file;
-
-    const scale = Math.min(1, maxSide / Math.max(originalW, originalH));
-    const targetW = Math.max(1, Math.round(originalW * scale));
-    const targetH = Math.max(1, Math.round(originalH * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = targetW;
-    canvas.height = targetH;
-
-    const ctx = canvas.getContext("2d", { alpha: true });
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-
-    const isPng = file.type === "image/png";
-    const isLikelyTransparent = isPng;
-
-    // 사진/일러스트는 흰 배경 JPEG/WebP가 용량 효율이 좋습니다.
-    if (!isLikelyTransparent) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, targetW, targetH);
-    }
-
-    ctx.drawImage(img, 0, 0, targetW, targetH);
-
-    let outputType = "image/jpeg";
-    let quality = SIEL_IMAGE_COMPRESS_CONFIG.jpegQuality;
-    let ext = "jpg";
-
-    // WebP 지원 브라우저에서는 더 작게 저장합니다. 단, PNG는 투명 보존을 위해 PNG 유지.
-    if (!isLikelyTransparent && supportsWebPCompression()) {
-      outputType = "image/webp";
-      quality = SIEL_IMAGE_COMPRESS_CONFIG.webpQuality;
-      ext = "webp";
-    } else if (isLikelyTransparent) {
-      outputType = "image/png";
-      quality = undefined;
-      ext = "png";
-    }
-
-    let blob = await canvasToBlob(canvas, outputType, quality);
-    if (!blob) return file;
-
-    // PNG 투명 이미지는 압축 효과가 작을 수 있으므로 더 커지면 원본 유지
-    if (blob.size >= file.size && file.size < 900 * 1024) {
-      return file;
-    }
-
-    const originalName = (file.name || "image").replace(/\.[^.]+$/, "");
-    const compressedFile = new File([blob], `${originalName}_siel.${ext}`, {
-      type: outputType,
-      lastModified: Date.now()
-    });
-
-    compressedFile.sielOriginalSize = file.size;
-    compressedFile.sielCompressedSize = compressedFile.size;
-
-    const saved = file.size ? Math.round((1 - compressedFile.size / file.size) * 100) : 0;
-    console.log(`시엘 AAC 이미지 압축: ${Math.round(file.size / 1024)}KB → ${Math.round(compressedFile.size / 1024)}KB (${saved}% 절감)`);
-
-    return compressedFile;
-  } catch (e) {
-    console.warn("이미지 압축 실패, 원본으로 업로드합니다:", e);
-    return file;
-  }
-}
-
-function showCompressResult(originalFile, uploadFile) {
-  try {
-    if (!originalFile || !uploadFile || originalFile === uploadFile) return;
-    const before = Math.round(originalFile.size / 1024);
-    const after = Math.round(uploadFile.size / 1024);
-    const saved = originalFile.size ? Math.max(0, Math.round((1 - uploadFile.size / originalFile.size) * 100)) : 0;
-    const msg = `그림 압축 완료: ${before}KB → ${after}KB (${saved}% 절감)`;
-    if (typeof updateSyncStatus === "function") updateSyncStatus(msg);
-    else console.log(msg);
-  } catch (e) {}
-}
-
 async function uploadImageToStorageIfReady(file, cardId) {
   const compressedDataUrl = await fileToDataUrl(file);
 
@@ -947,11 +774,7 @@ $("addCategoryBtn").onclick = () => {
 $("addCardBtn").onclick = async () => {
   const cat = data.categories.find(c => c.id === $("categorySelect").value);
   const text = $("cardText").value.trim();
-  const originalFile = $("imageInput").files[0];
-  const file = await compressImageFile(originalFile);
-  showCompressResult(originalFile, file);
-  window.__sielLastOriginalFile = originalFile;
-  window.__sielLastUploadFile = file;
+  const file = $("imageInput").files[0];
 
   if (!cat || !text) {
     alert("카테고리와 그림 이름은 꼭 필요해요.");
@@ -973,7 +796,6 @@ $("addCardBtn").onclick = async () => {
       if (found.cat.id !== cat.id) {
         found.cat.cards = found.cat.cards.filter(c => c.id !== editingCardId);
         cat.cards.push(card);
-  if (window.__sielLastUploadFile) addImageSizeMetaToCard(cat.cards[cat.cards.length - 1], window.__sielLastOriginalFile, window.__sielLastUploadFile);
       }
 
       card.text = text;
@@ -1096,9 +918,7 @@ $("exportBtn").onclick = () => {
 };
 
 $("importInput").onchange = async (e) => {
-  const originalFile = e.target.files[0];
-  const file = await compressImageFile(originalFile);
-  showCompressResult(originalFile, file);
+  const file = e.target.files[0];
   if (!file) return;
   const text = await file.text();
   const imported = JSON.parse(text);
@@ -1115,7 +935,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielAdminFinal20260628");
+    const configModule = await import("./firebase-config.js?v=sielCategory3Row20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1300,293 +1120,3 @@ function repairSentenceChipImagesToDisplayUrl() {
   });
 }
 setInterval(repairSentenceChipImagesToDisplayUrl, 800);
-
-
-function refreshAdminImageSizeLabels() {
-  try {
-    const allCards = data.categories.flatMap(cat => cat.cards.map(card => ({...card, __catName: cat.name})));
-    const adminRoots = document.querySelectorAll(".adminPanel, .adminContent, .menuPanel, .modal, body");
-    adminRoots.forEach(root => {
-      root.querySelectorAll("img").forEach(img => {
-        const src = img.getAttribute("src") || "";
-        if (!src) return;
-        const card = allCards.find(c => c.image && (src.includes(c.image) || c.image.includes(src.split("?")[0]) || src.split("?")[0] === c.image.split("?")[0]));
-        if (!card) return;
-
-        const row = img.closest(".adminImageRow, .deleteRow, .imageRow, li, .adminItem, .manageItem, .pictureItem, div");
-        if (!row || row.querySelector(".adminImageSizeText")) return;
-
-        const sizeText = getCardImageSizeText(card);
-        if (!sizeText) return;
-
-        const info = document.createElement("span");
-        info.className = "adminImageSizeText";
-        info.textContent = sizeText;
-        info.title = `그림 용량: ${sizeText}`;
-
-        // 이름 텍스트 근처에 붙이기
-        const strong = row.querySelector("strong, b, .name, .title, .label");
-        if (strong && strong.parentElement) {
-          strong.insertAdjacentElement("afterend", info);
-        } else {
-          row.appendChild(info);
-        }
-      });
-    });
-  } catch (e) {
-    console.warn("관리자 그림 크기 표시 실패:", e);
-  }
-}
-
-setInterval(refreshAdminImageSizeLabels, 1200);
-document.addEventListener("click", () => setTimeout(refreshAdminImageSizeLabels, 250), true);
-
-
-/* ADMIN FINAL PATCH 20260628 */
-const SIEL_ADMIN_PASSWORD = window.SIEL_ADMIN_PASSWORD || "1935";
-let sielAdminUnlocked = false;
-let sielAdminPage = 1;
-const SIEL_ADMIN_PAGE_SIZE = 12;
-
-function sielGetAllCardsWithCategory() {
-  try {
-    return data.categories.flatMap(cat =>
-      (cat.cards || []).map(card => ({ ...card, __categoryId: cat.id, __categoryName: cat.name }))
-    );
-  } catch (e) {
-    return [];
-  }
-}
-
-function sielFormatSize(bytes) {
-  const n = Number(bytes || 0);
-  if (!n || Number.isNaN(n)) return "";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function sielCardSizeText(card) {
-  if (!card) return "";
-  return sielFormatSize(card.compressedSize || card.imageSize || card.sizeBytes || card.fileSize || card.bytes || 0);
-}
-
-function sielAdminOverlay() {
-  let el = document.getElementById("sielAdminOverlay");
-  if (!el) {
-    el = document.createElement("div");
-    el.id = "sielAdminOverlay";
-    el.className = "sielAdminOverlay";
-    document.body.appendChild(el);
-  }
-  return el;
-}
-
-function sielCloseAdminOverlay() {
-  const el = document.getElementById("sielAdminOverlay");
-  if (el) el.remove();
-}
-
-function sielShowAdminPassword() {
-  const el = sielAdminOverlay();
-  el.innerHTML = `
-    <div class="sielAdminCard sielAdminPasswordCard">
-      <button class="sielAdminClose" type="button" aria-label="닫기">×</button>
-      <h2>관리자</h2>
-      <p class="sielAdminSub">비밀번호를 입력해 주세요.</p>
-      <input class="sielAdminPasswordInput" type="password" inputmode="numeric" autocomplete="off" placeholder="비밀번호" />
-      <button class="sielAdminPrimary" type="button">확인</button>
-      <p class="sielAdminError" aria-live="polite"></p>
-    </div>
-  `;
-
-  const input = el.querySelector(".sielAdminPasswordInput");
-  const ok = el.querySelector(".sielAdminPrimary");
-  const close = el.querySelector(".sielAdminClose");
-  const err = el.querySelector(".sielAdminError");
-
-  const submit = () => {
-    if (input.value === SIEL_ADMIN_PASSWORD) {
-      sielAdminUnlocked = true;
-      sielShowAdminMenu();
-    } else {
-      err.textContent = "비밀번호가 맞지 않습니다.";
-      input.value = "";
-      input.focus();
-    }
-  };
-
-  ok.addEventListener("click", submit);
-  input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
-  close.addEventListener("click", sielCloseAdminOverlay);
-  setTimeout(() => input.focus(), 50);
-}
-
-function sielShowAdminMenu() {
-  const el = sielAdminOverlay();
-  el.innerHTML = `
-    <div class="sielAdminCard sielAdminMenuCard">
-      <button class="sielAdminClose" type="button" aria-label="닫기">×</button>
-      <h2>관리자 메뉴</h2>
-      <button class="sielAdminMenuBtn" type="button" data-admin-menu="images">그림 올리기</button>
-      <button class="sielAdminMenuBtn" type="button" data-admin-menu="board">게시판</button>
-    </div>
-  `;
-
-  el.querySelector(".sielAdminClose").addEventListener("click", sielCloseAdminOverlay);
-  el.querySelector('[data-admin-menu="images"]').addEventListener("click", () => {
-    sielCloseAdminOverlay();
-    setTimeout(() => {
-      if (typeof openAdmin === "function") openAdmin();
-      else if (typeof showAdmin === "function") showAdmin();
-      else if (typeof renderAdmin === "function") renderAdmin();
-      else {
-        const existing = document.querySelector("[data-open-admin], .adminOpen, #adminOpen");
-        if (existing) existing.click();
-      }
-      sielAdminPage = 1;
-      setTimeout(sielApplyAdminPagination, 400);
-    }, 50);
-  });
-
-  el.querySelector('[data-admin-menu="board"]').addEventListener("click", () => {
-    sielShowBoardPanel();
-  });
-}
-
-function sielShowBoardPanel() {
-  const el = sielAdminOverlay();
-  el.innerHTML = `
-    <div class="sielAdminCard sielBoardCard">
-      <button class="sielAdminClose" type="button" aria-label="닫기">×</button>
-      <h2>게시판</h2>
-      <p class="sielAdminSub">게시판 영역입니다. 추후 공지나 기록을 연결할 수 있습니다.</p>
-      <textarea class="sielBoardTextarea" placeholder="메모를 남겨둘 수 있어요."></textarea>
-      <button class="sielAdminMenuBtn" type="button" data-admin-menu="back">관리자 메뉴로 돌아가기</button>
-    </div>
-  `;
-  el.querySelector(".sielAdminClose").addEventListener("click", sielCloseAdminOverlay);
-  el.querySelector('[data-admin-menu="back"]').addEventListener("click", sielShowAdminMenu);
-}
-
-function sielHookAdminEntry() {
-  const buttons = Array.from(document.querySelectorAll("button, [role='button']"));
-  const candidates = buttons.filter(btn => {
-    const t = (btn.textContent || "").trim();
-    const aria = (btn.getAttribute("aria-label") || "").toLowerCase();
-    const cls = (btn.className || "").toString().toLowerCase();
-    const id = (btn.id || "").toLowerCase();
-    return t === "☰" || t === "≡" || t.includes("☰") || aria.includes("menu") || aria.includes("메뉴") || cls.includes("hamburger") || cls.includes("menu") || id.includes("menu");
-  });
-
-  candidates.forEach(btn => {
-    if (btn.dataset.sielAdminHooked === "1") return;
-    btn.dataset.sielAdminHooked = "1";
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      sielShowAdminPassword();
-    }, true);
-  });
-}
-
-function sielApplyAdminSizeText(root = document) {
-  const cards = sielGetAllCardsWithCategory();
-  root.querySelectorAll("img").forEach(img => {
-    const src = img.getAttribute("src") || "";
-    if (!src) return;
-    const pure = src.split("?")[0];
-    const card = cards.find(c => c.image && (c.image === src || c.image.split("?")[0] === pure || src.includes(c.image) || c.image.includes(pure)));
-    if (!card) return;
-    const size = sielCardSizeText(card);
-    if (!size) return;
-
-    const row = img.closest(".adminImageRow, .deleteRow, .imageRow, li, .adminItem, .manageItem, .pictureItem, .cardManageItem, div");
-    if (!row || row.querySelector(".adminImageSizeText")) return;
-
-    const span = document.createElement("span");
-    span.className = "adminImageSizeText";
-    span.textContent = size;
-
-    const target = row.querySelector("strong, b, .name, .title, .label, input[type='text']");
-    if (target) target.insertAdjacentElement("afterend", span);
-    else row.appendChild(span);
-  });
-}
-
-function sielFindAdminImageRows() {
-  const roots = Array.from(document.querySelectorAll(".adminPanel, .adminContent, .menuPanel, .modal, .drawer, .sidePanel, body"));
-  let bestRows = [];
-  roots.forEach(root => {
-    const rows = Array.from(root.querySelectorAll(".adminImageRow, .deleteRow, .imageRow, li, .adminItem, .manageItem, .pictureItem, .cardManageItem"))
-      .filter(row => row.querySelector("img") && (row.textContent.includes("수정") || row.textContent.includes("삭제") || row.querySelector("button")));
-    if (rows.length > bestRows.length) bestRows = rows;
-  });
-
-  if (!bestRows.length) {
-    bestRows = Array.from(document.querySelectorAll("img")).map(img => img.closest("li, .adminItem, .manageItem, .pictureItem, div")).filter(Boolean);
-    bestRows = [...new Set(bestRows)].filter(row => row.querySelector("img") && row.textContent.length < 300);
-  }
-  return bestRows;
-}
-
-function sielApplyAdminPagination() {
-  sielHookAdminEntry();
-  sielApplyAdminSizeText();
-
-  const rows = sielFindAdminImageRows();
-  if (rows.length <= SIEL_ADMIN_PAGE_SIZE) {
-    const oldPager = document.getElementById("sielAdminPager");
-    if (oldPager) oldPager.remove();
-    return;
-  }
-
-  const total = rows.length;
-  const maxPage = Math.max(1, Math.ceil(total / SIEL_ADMIN_PAGE_SIZE));
-  if (sielAdminPage > maxPage) sielAdminPage = maxPage;
-
-  rows.forEach((row, idx) => {
-    const page = Math.floor(idx / SIEL_ADMIN_PAGE_SIZE) + 1;
-    row.style.display = page === sielAdminPage ? "" : "none";
-  });
-
-  const parent = rows[0].parentElement;
-  if (!parent) return;
-
-  let pager = document.getElementById("sielAdminPager");
-  if (!pager) {
-    pager = document.createElement("div");
-    pager.id = "sielAdminPager";
-    pager.className = "sielAdminPager";
-    parent.insertAdjacentElement("afterend", pager);
-  }
-
-  pager.innerHTML = `
-    <button type="button" class="sielPagerBtn" ${sielAdminPage <= 1 ? "disabled" : ""}>‹ 이전</button>
-    <span class="sielPagerText">${sielAdminPage} / ${maxPage} · 총 ${total}개</span>
-    <button type="button" class="sielPagerBtn" ${sielAdminPage >= maxPage ? "disabled" : ""}>다음 ›</button>
-  `;
-
-  const [prev, next] = pager.querySelectorAll("button");
-  prev.addEventListener("click", () => {
-    if (sielAdminPage > 1) {
-      sielAdminPage -= 1;
-      sielApplyAdminPagination();
-    }
-  });
-  next.addEventListener("click", () => {
-    if (sielAdminPage < maxPage) {
-      sielAdminPage += 1;
-      sielApplyAdminPagination();
-    }
-  });
-}
-
-setInterval(() => {
-  sielHookAdminEntry();
-  sielApplyAdminSizeText();
-  if (document.querySelector(".adminPanel, .adminContent, .menuPanel, .modal, .drawer, .sidePanel")) {
-    sielApplyAdminPagination();
-  }
-}, 1200);
-document.addEventListener("click", () => setTimeout(sielApplyAdminPagination, 350), true);
