@@ -462,7 +462,8 @@ function getCardVersion(card) {
   return String(card.updatedAt || card.storagePath || card.image || card.id || "");
 }
 
-async function forceRefreshImageCache(url, versionKey) {
+// 이미 캐시된 버전과 같으면 건너뜀 — 새로 추가된 그림만 다운로드
+async function smartCacheImage(url, versionKey) {
   if (!url || !("caches" in window)) return false;
   if (!/^https?:/.test(url)) return false;
 
@@ -470,18 +471,20 @@ async function forceRefreshImageCache(url, versionKey) {
     const cache = await caches.open(OFFLINE_IMAGE_CACHE);
     const cacheKey = `${url}#sielVersion=${encodeURIComponent(versionKey || url)}`;
 
-    const cachedVersion = await cache.match(cacheKey);
-    if (cachedVersion && !navigator.onLine) return true;
+    // 같은 버전이 이미 캐시에 있으면 → 건너뜀
+    const already = await cache.match(cacheKey);
+    if (already) return true;
 
-    const keys = await cache.keys();
-    await Promise.all(
-      keys
-        .filter(req => req.url === url || req.url.startsWith(url + "#sielVersion="))
-        .map(req => cache.delete(req))
-    );
-
-    const response = await fetch(url, { cache: "reload", credentials: "omit", mode: "cors" });
+    // 새 그림이거나 버전이 바뀐 경우만 다운로드
+    const response = await fetch(url, { credentials: "omit", mode: "cors" });
     if (response && response.ok) {
+      // 이전 버전 캐시 정리 후 새 버전 저장
+      const keys = await cache.keys();
+      await Promise.all(
+        keys
+          .filter(req => req.url === url || req.url.startsWith(url + "#sielVersion="))
+          .map(req => cache.delete(req))
+      );
       await cache.put(cacheKey, response.clone());
       await cache.put(url, response.clone());
       return true;
@@ -489,13 +492,16 @@ async function forceRefreshImageCache(url, versionKey) {
   } catch (e) {
     try {
       const cache = await caches.open(OFFLINE_IMAGE_CACHE);
-      const response = await fetch(url, { cache: "reload", mode: "no-cors" });
+      const cacheKey = `${url}#sielVersion=${encodeURIComponent(versionKey || url)}`;
+      const already = await cache.match(cacheKey);
+      if (already) return true;
+      const response = await fetch(url, { mode: "no-cors" });
       if (response && (response.ok || response.type === "opaque")) {
         await cache.put(url, response.clone());
         return true;
       }
     } catch (err) {
-      console.warn("최신 이미지 덮어쓰기 실패:", url, err);
+      console.warn("이미지 캐시 실패:", url, err);
     }
   }
   return false;
@@ -519,19 +525,36 @@ async function syncLatestImagesFromCloud() {
     return;
   }
 
-  setSyncProgress(0, cards.length, "최신 그림 동기화 중");
+  // 1단계: 어떤 그림이 새로 추가됐는지 먼저 확인
+  const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+  const newCards = [];
+  for (const card of cards) {
+    const versionKey = getCardVersion(card);
+    const cacheKey = `${card.image}#sielVersion=${encodeURIComponent(versionKey)}`;
+    const already = await cache.match(cacheKey);
+    if (!already) newCards.push(card);
+  }
+
+  if (newCards.length === 0) {
+    updateSyncStatus("모든 그림이 최신 상태예요. (" + cards.length + "개)");
+    requestAnimationFrame(attachImageCacheOnLoad);
+    return;
+  }
+
+  // 2단계: 새 그림만 다운로드
+  setSyncProgress(0, newCards.length, `새 그림 ${newCards.length}개 받는 중`);
 
   let done = 0;
-  for (const card of cards) {
-    await forceRefreshImageCache(card.image, getCardVersion(card));
+  for (const card of newCards) {
+    await smartCacheImage(card.image, getCardVersion(card));
     done += 1;
-    if (done === 1 || done === cards.length || done % 3 === 0) {
-      setSyncProgress(done, cards.length, "최신 그림 동기화 중");
+    if (done === 1 || done === newCards.length || done % 3 === 0) {
+      setSyncProgress(done, newCards.length, `새 그림 받는 중`);
       await new Promise(resolve => setTimeout(resolve, 20));
     }
   }
 
-  updateSyncStatus("최신 그림으로 업데이트 완료. 이제 Wi-Fi를 꺼도 사용할 수 있어요.");
+  updateSyncStatus(`새 그림 ${newCards.length}개 저장 완료. 이제 Wi-Fi를 꺼도 사용할 수 있어요.`);
   requestAnimationFrame(attachImageCacheOnLoad);
 }
 
@@ -539,14 +562,17 @@ async function warmUpImageCache() {
   if (!("caches" in window)) return;
 
   try {
-    const urls = [];
+    const cards = [];
     data.categories.forEach(cat => {
       cat.cards.forEach(card => {
-        if (card.image && /^https?:/.test(card.image)) urls.push(card.image);
+        if (card.image && /^https?:/.test(card.image)) cards.push(card);
       });
     });
 
-    await Promise.allSettled(urls.slice(0, 700).map(url => cacheImageUrl(url)));
+    // 이미 캐시된 그림은 건너뜀
+    await Promise.allSettled(
+      cards.slice(0, 700).map(card => smartCacheImage(card.image, getCardVersion(card)))
+    );
     attachImageCacheOnLoad();
   } catch (e) {
     console.warn("이미지 오프라인 저장 실패:", e);
@@ -637,67 +663,17 @@ function escapeHtml(s) {
 
 // ===== 이미지 크롭 기능 =====
 let cropImageSrc = null;
-let cropResolve = null;
+let cropResolve  = null;
 let cropNaturalW = 0;
 let cropNaturalH = 0;
-let cropScale = 1;
-let cropMode = "crop"; // "crop" | "fit"
+let cropMode = "pan"; // "pan" | "fit"
 
-// 크롭박스 상태
-let cropBox = { x: 20, y: 20, w: 200, h: 200 };
-let dragState = null;
+// 팬/줌 상태 (pan 모드)
+let imgX = 0, imgY = 0, imgScale = 1;
+let panStart = null;       // { x, y, imgX, imgY }
+let pinchStart = null;     // { dist, scale, cx, cy, imgX, imgY }
 
-function setCropMode(mode) {
-  cropMode = mode;
-  const cropBtn = $("modeCropBtn");
-  const fitBtn = $("modeFitBtn");
-  const overlay = $("cropOverlay");
-  const fitCanvas = $("fitPreviewCanvas");
-  const mainCanvas = $("cropCanvas");
-  const hint = $("cropHint");
-
-  if (mode === "crop") {
-    cropBtn.style.background = "#a78bfa";
-    cropBtn.style.color = "#fff";
-    fitBtn.style.background = "transparent";
-    fitBtn.style.color = "#aaa";
-    overlay.style.display = "";
-    mainCanvas.style.display = "block";
-    fitCanvas.style.display = "none";
-    hint.textContent = "박스를 드래그하거나 캔버스를 눌러 영역을 선택하세요";
-  } else {
-    fitBtn.style.background = "#a78bfa";
-    fitBtn.style.color = "#fff";
-    cropBtn.style.background = "transparent";
-    cropBtn.style.color = "#aaa";
-    overlay.style.display = "none";
-    mainCanvas.style.display = "none";
-    fitCanvas.style.display = "block";
-    hint.textContent = "그림 전체를 정사각형 안에 축소해서 넣습니다";
-    renderFitPreview();
-  }
-}
-
-function renderFitPreview() {
-  const outSize = 300;
-  const canvas = $("fitPreviewCanvas");
-  canvas.width = outSize;
-  canvas.height = outSize;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, outSize, outSize);
-
-  const img = new Image();
-  img.onload = () => {
-    const scale = Math.min(outSize / img.naturalWidth, outSize / img.naturalHeight);
-    const w = Math.round(img.naturalWidth * scale);
-    const h = Math.round(img.naturalHeight * scale);
-    const x = Math.round((outSize - w) / 2);
-    const y = Math.round((outSize - h) / 2);
-    ctx.drawImage(img, x, y, w, h);
-  };
-  img.src = cropImageSrc;
-}
+const FRAME = 300; // 정사각형 프레임 크기(px) — 캔버스 크기
 
 function openCropDialog(file) {
   return new Promise((resolve) => {
@@ -709,31 +685,7 @@ function openCropDialog(file) {
       img.onload = () => {
         cropNaturalW = img.naturalWidth;
         cropNaturalH = img.naturalHeight;
-
-        const canvas = $("cropCanvas");
-        const container = $("cropContainer");
-        const maxW = Math.min(container.clientWidth || 340, 340);
-        const maxH = Math.min(window.innerHeight * 0.48, 320);
-
-        cropScale = Math.min(maxW / cropNaturalW, maxH / cropNaturalH, 1);
-        canvas.width = Math.round(cropNaturalW * cropScale);
-        canvas.height = Math.round(cropNaturalH * cropScale);
-
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        // 초기 크롭박스: 중앙 정사각형
-        const size = Math.min(canvas.width, canvas.height) * 0.8;
-        cropBox = {
-          x: Math.round((canvas.width - size) / 2),
-          y: Math.round((canvas.height - size) / 2),
-          w: Math.round(size),
-          h: Math.round(size)
-        };
-
-        // 항상 자르기 모드로 시작
-        setCropMode("crop");
-        drawCropOverlay();
+        setCropMode("pan");
         $("cropDialog").showModal();
       };
       img.onerror = () => resolve(null);
@@ -744,108 +696,237 @@ function openCropDialog(file) {
   });
 }
 
-function clampCropBox() {
+/* ── 캔버스에 현재 상태 그리기 ── */
+function drawPanCanvas() {
   const canvas = $("cropCanvas");
-  const minSize = 30;
-  cropBox.w = Math.max(minSize, Math.min(cropBox.w, canvas.width));
-  cropBox.h = Math.max(minSize, Math.min(cropBox.h, canvas.height));
-  cropBox.x = Math.max(0, Math.min(cropBox.x, canvas.width - cropBox.w));
-  cropBox.y = Math.max(0, Math.min(cropBox.y, canvas.height - cropBox.h));
+  const ctx = canvas.getContext("2d");
+  canvas.width  = FRAME;
+  canvas.height = FRAME;
+
+  ctx.fillStyle = "#222";
+  ctx.fillRect(0, 0, FRAME, FRAME);
+
+  const img = new Image();
+  img.onload = () => {
+    const dispW = cropNaturalW * imgScale;
+    const dispH = cropNaturalH * imgScale;
+    ctx.drawImage(img, imgX, imgY, dispW, dispH);
+
+    // 프레임 테두리
+    ctx.strokeStyle = "#a78bfa";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, FRAME-2, FRAME-2);
+
+    // 3×3 가이드선
+    ctx.strokeStyle = "rgba(255,255,255,0.25)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 3; i++) {
+      ctx.beginPath(); ctx.moveTo(FRAME/3*i, 0); ctx.lineTo(FRAME/3*i, FRAME); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, FRAME/3*i); ctx.lineTo(FRAME, FRAME/3*i); ctx.stroke();
+    }
+  };
+  img.src = cropImageSrc;
 }
 
-function drawCropOverlay() {
-  clampCropBox();
-  const canvas = $("cropCanvas");
-  const box = $("cropBox");
+/* ── 초기 스케일: 프레임을 꽉 채우는 최소 크기 ── */
+function resetPanState() {
+  const scaleToFill = Math.max(FRAME / cropNaturalW, FRAME / cropNaturalH);
+  imgScale = scaleToFill;
+  imgX = (FRAME - cropNaturalW * imgScale) / 2;
+  imgY = (FRAME - cropNaturalH * imgScale) / 2;
+  drawPanCanvas();
+}
+
+/* ── 스케일 변경 후 경계 보정 ── */
+function clampPan() {
+  const dispW = cropNaturalW * imgScale;
+  const dispH = cropNaturalH * imgScale;
+  // 그림이 프레임보다 작아지지 않게
+  if (dispW < FRAME) { imgScale = FRAME / cropNaturalW; }
+  if (cropNaturalH * imgScale < FRAME) { imgScale = FRAME / cropNaturalH; }
+  const dW = cropNaturalW * imgScale;
+  const dH = cropNaturalH * imgScale;
+  if (imgX > 0) imgX = 0;
+  if (imgY > 0) imgY = 0;
+  if (imgX + dW < FRAME) imgX = FRAME - dW;
+  if (imgY + dH < FRAME) imgY = FRAME - dH;
+}
+
+/* ── 터치/마우스 이벤트 ── */
+function getCanvasPos(e, canvas) {
   const rect = canvas.getBoundingClientRect();
-  const container = $("cropContainer");
-  const cRect = container.getBoundingClientRect();
-
-  const offsetX = rect.left - cRect.left;
-  const offsetY = rect.top - cRect.top;
-
-  box.style.left = (offsetX + cropBox.x) + "px";
-  box.style.top = (offsetY + cropBox.y) + "px";
-  box.style.width = cropBox.w + "px";
-  box.style.height = cropBox.h + "px";
+  const scaleX = FRAME / rect.width;
+  const touch = e.touches ? e.touches[0] : e;
+  return {
+    x: (touch.clientX - rect.left) * scaleX,
+    y: (touch.clientY - rect.top)  * scaleX
+  };
 }
 
-function getEventPos(e) {
-  const canvas = $("cropCanvas");
+function getTouchDist(e) {
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+
+function getTouchCenter(e, canvas) {
   const rect = canvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return { x: clientX - rect.left, y: clientY - rect.top };
+  const scaleX = FRAME / rect.width;
+  return {
+    x: ((e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left) * scaleX,
+    y: ((e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top)  * scaleX
+  };
 }
 
-$("modeCropBtn").onclick = () => setCropMode("crop");
-$("modeFitBtn").onclick = () => setCropMode("fit");
-
-$("cropBox").addEventListener("mousedown", startDrag);
-$("cropBox").addEventListener("touchstart", startDrag, { passive: false });
-
-function startDrag(e) {
+function onCanvasMouseDown(e) {
+  if (cropMode !== "pan") return;
   e.preventDefault();
-  const pos = getEventPos(e);
-  dragState = { startX: pos.x, startY: pos.y, startBox: { ...cropBox } };
+  const canvas = $("cropCanvas");
+  const pos = getCanvasPos(e, canvas);
+  panStart = { x: pos.x, y: pos.y, imgX, imgY };
 }
 
-document.addEventListener("mousemove", onDrag);
-document.addEventListener("touchmove", onDrag, { passive: false });
-document.addEventListener("mouseup", endDrag);
-document.addEventListener("touchend", endDrag);
-
-function onDrag(e) {
-  if (!dragState || cropMode !== "crop") return;
+function onCanvasTouchStart(e) {
+  if (cropMode !== "pan") return;
   e.preventDefault();
-  const pos = getEventPos(e);
-  const dx = pos.x - dragState.startX;
-  const dy = pos.y - dragState.startY;
-  cropBox.x = dragState.startBox.x + dx;
-  cropBox.y = dragState.startBox.y + dy;
-  drawCropOverlay();
+  const canvas = $("cropCanvas");
+  if (e.touches.length === 1) {
+    const pos = getCanvasPos(e, canvas);
+    panStart = { x: pos.x, y: pos.y, imgX, imgY };
+    pinchStart = null;
+  } else if (e.touches.length === 2) {
+    panStart = null;
+    const c = getTouchCenter(e, canvas);
+    pinchStart = { dist: getTouchDist(e), scale: imgScale, cx: c.x, cy: c.y, imgX, imgY };
+  }
 }
 
-function endDrag() { dragState = null; }
+function onCanvasMouseMove(e) {
+  if (cropMode !== "pan" || !panStart) return;
+  e.preventDefault();
+  const canvas = $("cropCanvas");
+  const pos = getCanvasPos(e, canvas);
+  imgX = panStart.imgX + (pos.x - panStart.x);
+  imgY = panStart.imgY + (pos.y - panStart.y);
+  clampPan();
+  drawPanCanvas();
+}
 
-// 캔버스 클릭으로 크롭박스 이동
-$("cropCanvas").addEventListener("click", (e) => {
-  if (cropMode !== "crop") return;
-  const pos = getEventPos(e);
-  cropBox.x = pos.x - cropBox.w / 2;
-  cropBox.y = pos.y - cropBox.h / 2;
-  drawCropOverlay();
+function onCanvasTouchMove(e) {
+  if (cropMode !== "pan") return;
+  e.preventDefault();
+  const canvas = $("cropCanvas");
+  if (e.touches.length === 1 && panStart) {
+    const pos = getCanvasPos(e, canvas);
+    imgX = panStart.imgX + (pos.x - panStart.x);
+    imgY = panStart.imgY + (pos.y - panStart.y);
+    clampPan();
+    drawPanCanvas();
+  } else if (e.touches.length === 2 && pinchStart) {
+    const newDist = getTouchDist(e);
+    const ratio   = newDist / pinchStart.dist;
+    const newScale = pinchStart.scale * ratio;
+    const c = getTouchCenter(e, canvas);
+    // 핀치 중심점 기준으로 확대/축소
+    imgX = c.x - (pinchStart.cx - pinchStart.imgX) * ratio;
+    imgY = c.y - (pinchStart.cy - pinchStart.imgY) * ratio;
+    imgScale = newScale;
+    clampPan();
+    drawPanCanvas();
+  }
+}
+
+function onCanvasPointerUp() {
+  panStart = null;
+  pinchStart = null;
+}
+
+/* ── 모드 전환 ── */
+function setCropMode(mode) {
+  cropMode = mode;
+  const canvas    = $("cropCanvas");
+  const fitCanvas = $("fitPreviewCanvas");
+  const panBtn    = $("modeCropBtn");
+  const fitBtn    = $("modeFitBtn");
+  const hint      = $("cropHint");
+
+  if (mode === "pan") {
+    panBtn.style.background = "#a78bfa"; panBtn.style.color = "#fff";
+    fitBtn.style.background = "transparent"; fitBtn.style.color = "#aaa";
+    canvas.style.display    = "block";
+    fitCanvas.style.display = "none";
+    hint.textContent = "드래그로 위치 조정 · 두 손가락으로 크기 조절";
+    resetPanState();
+  } else {
+    fitBtn.style.background = "#a78bfa"; fitBtn.style.color = "#fff";
+    panBtn.style.background = "transparent"; panBtn.style.color = "#aaa";
+    canvas.style.display    = "none";
+    fitCanvas.style.display = "block";
+    hint.textContent = "그림 전체를 정사각형 안에 흰 배경으로 넣습니다";
+    renderFitPreview();
+  }
+}
+
+function renderFitPreview() {
+  const out = 300;
+  const fc  = $("fitPreviewCanvas");
+  fc.width = out; fc.height = out;
+  const ctx = fc.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, out, out);
+  const img = new Image();
+  img.onload = () => {
+    const s = Math.min(out / img.naturalWidth, out / img.naturalHeight);
+    const w = img.naturalWidth * s, h = img.naturalHeight * s;
+    ctx.drawImage(img, (out-w)/2, (out-h)/2, w, h);
+  };
+  img.src = cropImageSrc;
+}
+
+/* ── 이벤트 바인딩 ── */
+$("modeCropBtn").onclick = () => setCropMode("pan");
+$("modeFitBtn").onclick  = () => setCropMode("fit");
+
+const _cv = () => $("cropCanvas");
+_cv; // 나중에 showModal 후 붙임 — dialog open 시점에 바인딩
+$("cropDialog").addEventListener("toggle", () => {
+  if ($("cropDialog").open) {
+    const cv = $("cropCanvas");
+    cv.addEventListener("mousedown",  onCanvasMouseDown,  { passive: false });
+    cv.addEventListener("touchstart", onCanvasTouchStart, { passive: false });
+    cv.addEventListener("mousemove",  onCanvasMouseMove,  { passive: false });
+    cv.addEventListener("touchmove",  onCanvasTouchMove,  { passive: false });
+    cv.addEventListener("mouseup",    onCanvasPointerUp);
+    cv.addEventListener("mouseleave", onCanvasPointerUp);
+    cv.addEventListener("touchend",   onCanvasPointerUp);
+  }
 });
 
+/* ── 완료 버튼 ── */
 $("cropConfirmBtn").onclick = () => {
   const outSize = 900;
   const out = document.createElement("canvas");
-  out.width = outSize;
-  out.height = outSize;
+  out.width = outSize; out.height = outSize;
   const ctx = out.getContext("2d");
 
   const img = new Image();
   img.onload = () => {
     if (cropMode === "fit") {
-      // 축소 맞춤: 흰 배경 + 비율 유지하며 중앙 배치
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, outSize, outSize);
-      const scale = Math.min(outSize / img.naturalWidth, outSize / img.naturalHeight);
-      const w = Math.round(img.naturalWidth * scale);
-      const h = Math.round(img.naturalHeight * scale);
-      const x = Math.round((outSize - w) / 2);
-      const y = Math.round((outSize - h) / 2);
-      ctx.drawImage(img, x, y, w, h);
+      const s = Math.min(outSize / img.naturalWidth, outSize / img.naturalHeight);
+      const w = img.naturalWidth * s, h = img.naturalHeight * s;
+      ctx.drawImage(img, (outSize-w)/2, (outSize-h)/2, w, h);
     } else {
-      // 자르기: 선택 영역만 잘라서 정사각형으로
-      const srcX = Math.round(cropBox.x / cropScale);
-      const srcY = Math.round(cropBox.y / cropScale);
-      const srcW = Math.round(cropBox.w / cropScale);
-      const srcH = Math.round(cropBox.h / cropScale);
-      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outSize, outSize);
+      // pan 모드: 화면에 보이는 그대로 캡처
+      const ratio = outSize / FRAME;
+      ctx.fillStyle = "#222";
+      ctx.fillRect(0, 0, outSize, outSize);
+      ctx.drawImage(img, imgX * ratio, imgY * ratio,
+                    cropNaturalW * imgScale * ratio,
+                    cropNaturalH * imgScale * ratio);
     }
-
-    const dataUrl = out.toDataURL("image/jpeg", 0.78);
+    const dataUrl = out.toDataURL("image/jpeg", 0.82);
     $("cropDialog").close();
     if (cropResolve) { cropResolve(dataUrl); cropResolve = null; }
   };
@@ -856,10 +937,6 @@ $("cropCancelBtn").onclick = () => {
   $("cropDialog").close();
   if (cropResolve) { cropResolve(null); cropResolve = null; }
 };
-
-window.addEventListener("resize", () => {
-  if ($("cropDialog").open) drawCropOverlay();
-});
 // ===== 크롭 기능 끝 =====
 
 async function fileToDataUrl(file) {
