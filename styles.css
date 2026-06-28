@@ -1357,3 +1357,307 @@ hr {
   color: #A6A6A6 !important;
   font-weight: 400 !important;
 }
+
+
+/* NARROW PHONE COMPACT 20260628
+   Z Fold 접은 화면/좁은 세로형 휴대폰에서 하단 카테고리가 잘리지 않도록
+   문장 영역, 카드 영역, 페이지 점, 하단 카테고리 간격을 compact하게 재배치합니다.
+   펼친 폴드/태블릿/노트북/가로 화면은 기존 비율 유지. */
+
+@media (orientation: portrait) and (max-width: 520px) {
+  :root {
+    --header-h: clamp(56px, 8.2vh, 72px);
+    --search-h: clamp(58px, 8vh, 70px);
+    --cat-h: clamp(74px, 10.2vh, 88px);
+    --choice-card-h: clamp(138px, 20.5vh, 174px);
+    --sentence-card-h: clamp(132px, 20vh, 170px);
+  }
+
+  html,
+  body,
+  #app {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .app,
+  .aacApp,
+  .main,
+  .page,
+  .wrap {
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .aacLayout {
+    height: calc(100dvh - var(--header-h)) !important;
+    max-height: calc(100dvh - var(--header-h)) !important;
+    display: grid !important;
+    grid-template-rows:
+      var(--search-h)
+      minmax(205px, 32vh)
+      minmax(170px, 25vh)
+      minmax(18px, 3vh)
+      var(--cat-h) !important;
+    row-gap: clamp(4px, 0.8vh, 8px) !important;
+    overflow: hidden !important;
+  }
+
+  .searchRow,
+  .searchArea {
+    height: var(--search-h) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: clamp(5px, 0.8vh, 8px) clamp(10px, 2vw, 14px) !important;
+  }
+
+  .sentencePanel {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 clamp(8px, 2vw, 14px) !important;
+    padding:
+      clamp(34px, 4.5vh, 46px)
+      clamp(8px, 2vw, 14px)
+      clamp(22px, 3vh, 32px) !important;
+    overflow: hidden !important;
+  }
+
+  .sentenceList,
+  .sentenceCards,
+  .selectedCards,
+  .sentenceScroll {
+    height: calc(100% - 34px) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: clamp(8px, 2.2vw, 14px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  .sentenceChip {
+    width: clamp(132px, 39vw, 158px) !important;
+    height: clamp(140px, 20.2vh, 166px) !important;
+    min-width: clamp(132px, 39vw, 158px) !important;
+    flex: 0 0 auto !important;
+  }
+
+  .sentenceText,
+  .sentenceOutput,
+  .sentencePreview,
+  .sentenceSummary,
+  .sentenceLine,
+  #sentenceText,
+  #sentenceOutput,
+  #sentencePreview,
+  #sentenceSummary,
+  .sentencePanel > .sentenceLabel:not(.sentenceChip .sentenceLabel) {
+    font-size: 18px !important;
+    margin-top: clamp(2px, 0.4vh, 5px) !important;
+    margin-bottom: 0 !important;
+    line-height: 1.18 !important;
+  }
+
+  .choiceArea,
+  .cardArea,
+  .cardsPanel,
+  .cardPanel {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 clamp(8px, 2vw, 14px) !important;
+    overflow: hidden !important;
+  }
+
+  .cardList,
+  .cards,
+  .choiceList,
+  .gridCards,
+  .cardScroll {
+    height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: clamp(8px, 2.2vw, 14px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding: 0 0 clamp(2px, 0.4vh, 4px) !important;
+  }
+
+  .card {
+    width: clamp(128px, 31vw, 156px) !important;
+    height: clamp(156px, 23vh, 184px) !important;
+    min-width: clamp(128px, 31vw, 156px) !important;
+    flex: 0 0 auto !important;
+  }
+
+  .pager,
+  .pageDots,
+  .pagination,
+  .dots {
+    height: clamp(18px, 3vh, 26px) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    height: var(--cat-h) !important;
+    min-height: var(--cat-h) !important;
+    max-height: var(--cat-h) !important;
+    margin: 0 clamp(6px, 1.6vw, 10px) clamp(4px, 0.8vh, 8px) !important;
+    padding: clamp(5px, 0.8vh, 8px) clamp(6px, 1.6vw, 10px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    align-items: center !important;
+  }
+
+  .categoryBtn,
+  .catBtn,
+  .tabBtn {
+    height: clamp(58px, 8.5vh, 72px) !important;
+    min-width: clamp(84px, 23vw, 104px) !important;
+    padding: 4px 8px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .categoryBtn .icon,
+  .catBtn .icon,
+  .tabBtn .icon {
+    font-size: clamp(20px, 5vw, 27px) !important;
+    line-height: 1 !important;
+  }
+
+  .categoryBtn .label,
+  .catBtn .label,
+  .tabBtn .label {
+    font-size: clamp(17px, 4.2vw, 22px) !important;
+    line-height: 1.05 !important;
+  }
+}
+
+/* 높이가 특히 작은 세로 화면: 한 번 더 압축 */
+@media (orientation: portrait) and (max-width: 520px) and (max-height: 760px) {
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h)
+      minmax(188px, 30vh)
+      minmax(152px, 23vh)
+      minmax(16px, 2.6vh)
+      var(--cat-h) !important;
+    row-gap: 3px !important;
+  }
+
+  .sentencePanel {
+    padding-top: 34px !important;
+    padding-bottom: 20px !important;
+  }
+
+  .sentenceChip {
+    height: clamp(126px, 19vh, 150px) !important;
+    width: clamp(122px, 37vw, 146px) !important;
+    min-width: clamp(122px, 37vw, 146px) !important;
+  }
+
+  .card {
+    height: clamp(140px, 21.5vh, 166px) !important;
+    width: clamp(116px, 30vw, 142px) !important;
+    min-width: clamp(116px, 30vw, 142px) !important;
+  }
+
+  .categoryBar,
+  .bottomCategories,
+  .catBar,
+  .tabs {
+    margin-bottom: 3px !important;
+  }
+}
+
+
+/* X COLOR FINAL FIX 20260628
+   선택된 문장 카드의 X가 기존 빨간색으로 남는 문제를 강제로 보정합니다. */
+
+:root {
+  --siel-x-color: #ECD27E;
+}
+
+/* 명확한 X 버튼 후보 */
+.sielXSoft,
+.removeBtn,
+.closeBtn,
+.xBtn,
+.deleteSentenceBtn,
+.sentenceRemove,
+.cardRemove,
+.remove,
+.close {
+  color: var(--siel-x-color) !important;
+  -webkit-text-fill-color: var(--siel-x-color) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+}
+
+/* 문장 만들기/선택 카드 안의 닫기 버튼 강제 */
+.sentencePanel button,
+.sentenceChip button {
+  text-shadow: none !important;
+}
+
+.sentencePanel button.removeBtn,
+.sentencePanel button.closeBtn,
+.sentencePanel button.xBtn,
+.sentencePanel button.sielXSoft,
+.sentenceChip button.removeBtn,
+.sentenceChip button.closeBtn,
+.sentenceChip button.xBtn,
+.sentenceChip button.sielXSoft,
+.sentenceChip > button,
+.sentencePanel .sentenceChip > button {
+  color: var(--siel-x-color) !important;
+  -webkit-text-fill-color: var(--siel-x-color) !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* X가 카드 우상단 absolute 버튼으로 들어간 경우 */
+.sentenceChip button[style*="right"],
+.sentenceChip button[style*="top"],
+.sentencePanel button[style*="right"],
+.sentencePanel button[style*="top"] {
+  color: var(--siel-x-color) !important;
+  -webkit-text-fill-color: var(--siel-x-color) !important;
+}
+
+/* svg/icon형 X */
+.sentenceChip button svg,
+.sentencePanel button svg,
+.sielXSoft svg,
+.removeBtn svg,
+.closeBtn svg,
+.xBtn svg {
+  fill: var(--siel-x-color) !important;
+  stroke: var(--siel-x-color) !important;
+}
+
+/* 혹시 글자 X가 span으로 분리된 경우 */
+.sentenceChip span,
+.sentencePanel .sentenceChip span {
+  text-shadow: none !important;
+}
+
+.sentenceChip .removeIcon,
+.sentenceChip .xIcon,
+.sentencePanel .removeIcon,
+.sentencePanel .xIcon {
+  color: var(--siel-x-color) !important;
+  -webkit-text-fill-color: var(--siel-x-color) !important;
+}

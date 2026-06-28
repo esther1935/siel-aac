@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielStyleTextFix20260628";
-const IMAGE_CACHE = "siel-aac-image-cache-v9";
+const CACHE_NAME = "siel-aac-app-sielXColorFixed20260628";
+const IMAGE_CACHE = "siel-aac-image-cache-v11";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielStyleTextFix20260628",
-  "./app.js?v=sielStyleTextFix20260628",
-  "./manifest.webmanifest?v=sielStyleTextFix20260628"
+  "./styles.css?v=sielXColorFixed20260628",
+  "./app.js?v=sielXColorFixed20260628",
+  "./manifest.webmanifest?v=sielXColorFixed20260628"
 ];
 
 self.addEventListener("install", (event) => {
