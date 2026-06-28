@@ -121,6 +121,22 @@ function attachImageRepairHandlers() {
   });
 }
 
+
+async function cacheCardImageBothUrls(card) {
+  if (!card || !card.image || !("caches" in window)) return;
+  try {
+    await forceRefreshImageCache(card.image, getCardVersion ? getCardVersion(card) : imageVersionKey(card));
+    await forceRefreshImageCache(imageDisplayUrl(card), getCardVersion ? getCardVersion(card) : imageVersionKey(card));
+  } catch (e) {
+    try {
+      await cacheImageUrl(card.image);
+      await cacheImageUrl(imageDisplayUrl(card));
+    } catch (err) {
+      console.warn("선택 그림 캐시 실패:", err);
+    }
+  }
+}
+
 function render() {
   renderSentence();
   renderCategoryBar();
@@ -544,6 +560,7 @@ async function syncLatestImagesFromCloud() {
   let done = 0;
   for (const card of cards) {
     await forceRefreshImageCache(card.image, getCardVersion(card));
+    await forceRefreshImageCache(imageDisplayUrl(card), getCardVersion(card));
     done += 1;
     if (done === 1 || done === cards.length || done % 3 === 0) {
       setSyncProgress(done, cards.length, "최신 그림 동기화 중");
@@ -580,7 +597,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielOfflineStartFix20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielStyleTextFix20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -918,7 +935,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielOfflineStartFix20260628");
+    const configModule = await import("./firebase-config.js?v=sielStyleTextFix20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1077,3 +1094,29 @@ if ("serviceWorker" in navigator) {
     }
   });
 }
+
+
+document.addEventListener("click", (event) => {
+  const cardEl = event.target.closest(".card");
+  if (!cardEl || !navigator.onLine) return;
+  const img = cardEl.querySelector("img[data-card-id]");
+  const id = img && img.dataset.cardId;
+  if (!id) return;
+  const allCards = data.categories.flatMap(cat => cat.cards);
+  const card = allCards.find(c => c.id === id);
+  if (card) cacheCardImageBothUrls(card);
+}, true);
+
+
+function repairSentenceChipImagesToDisplayUrl() {
+  document.querySelectorAll(".sentenceChip img[data-card-id]").forEach(img => {
+    const id = img.dataset.cardId;
+    const card = sentenceCards.find(c => c.id === id) || data.categories.flatMap(cat => cat.cards).find(c => c.id === id);
+    if (!card) return;
+    const wanted = imageDisplayUrl(card);
+    if (wanted && img.getAttribute("src") !== wanted) {
+      img.setAttribute("src", wanted);
+    }
+  });
+}
+setInterval(repairSentenceChipImagesToDisplayUrl, 800);

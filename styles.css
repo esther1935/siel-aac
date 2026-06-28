@@ -1253,3 +1253,107 @@ hr {
     font-size: clamp(12px, 1.6vw, 17px) !important;
   }
 }
+
+/* SENTENCE OFFLINE IMAGE FIX */
+.sentenceImageBox img,
+.cardImageBox img {
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+
+/* STYLE TEXT FIX 20260628
+   요청 반영:
+   1) 문장 만들기 선택 카드 X 닫기 색상 #ECD27E
+   2) 문장 만들기 가운데 문장: 바탕체 18px, #A6A6A6
+*/
+
+/* 선택된 문장 카드의 X 닫기 버튼 */
+.sentenceChip .removeBtn,
+.sentenceChip .closeBtn,
+.sentenceChip button.removeBtn,
+.sentenceChip button.closeBtn,
+.sentenceChip .deleteSentenceBtn,
+.sentenceChip .sentenceRemove,
+.sentenceChip [data-remove],
+.sentenceChip .xBtn {
+  color: #ECD27E !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #ECD27E !important;
+}
+
+/* 문장 만들기 카드 안의 빨간 X가 일반 버튼/문자로 들어간 경우까지 보정 */
+.sentencePanel .removeBtn,
+.sentencePanel .closeBtn,
+.sentencePanel button.removeBtn,
+.sentencePanel button.closeBtn,
+.sentencePanel .deleteSentenceBtn,
+.sentencePanel .sentenceRemove,
+.sentencePanel [data-remove],
+.sentencePanel .xBtn {
+  color: #ECD27E !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #ECD27E !important;
+}
+
+/* 일부 버전에서 X가 svg/icon 색으로 들어간 경우 */
+.sentenceChip .removeBtn svg,
+.sentenceChip .closeBtn svg,
+.sentencePanel .removeBtn svg,
+.sentencePanel .closeBtn svg {
+  fill: #ECD27E !important;
+  stroke: #ECD27E !important;
+}
+
+/* 문장 만들기 가운데 문장 */
+.sentenceText,
+.sentenceOutput,
+.sentencePreview,
+.sentenceSummary,
+.sentenceLine,
+#sentenceText,
+#sentenceOutput,
+#sentencePreview,
+#sentenceSummary {
+  font-family: "Batang", "바탕", "BatangChe", "바탕체", serif !important;
+  font-size: 18px !important;
+  color: #A6A6A6 !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.25 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #A6A6A6 !important;
+}
+
+/* 현재 앱에서 가운데 문장이 특정 클래스 없이 패널 바로 아래 strong/div로 들어간 경우 대비 */
+.sentencePanel > .sentenceText,
+.sentencePanel > .sentenceOutput,
+.sentencePanel > .sentencePreview,
+.sentencePanel > .sentenceSummary,
+.sentencePanel > .sentenceLine,
+.sentenceArea > .sentenceText,
+.sentenceArea > .sentenceOutput,
+.sentenceArea > .sentencePreview,
+.sentenceArea > .sentenceSummary {
+  font-family: "Batang", "바탕", "BatangChe", "바탕체", serif !important;
+  font-size: 18px !important;
+  color: #A6A6A6 !important;
+  font-weight: 400 !important;
+}
+
+/* 선택 카드 안의 그림 이름은 기존대로 유지하고, 가운데 문장만 부드럽게 */
+.sentenceChip .sentenceLabel {
+  font-family: inherit;
+}
+
+/* 혹시 가운데 문장이 .sentenceLabel과 같은 이름으로 중복 적용되는 것을 방지 */
+.sentencePanel > .sentenceLabel:not(.sentenceChip .sentenceLabel) {
+  font-family: "Batang", "바탕", "BatangChe", "바탕체", serif !important;
+  font-size: 18px !important;
+  color: #A6A6A6 !important;
+  font-weight: 400 !important;
+}

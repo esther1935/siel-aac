@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielOfflineStartFix20260628";
-const IMAGE_CACHE = "siel-aac-image-cache-v7";
+const CACHE_NAME = "siel-aac-app-sielStyleTextFix20260628";
+const IMAGE_CACHE = "siel-aac-image-cache-v9";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielOfflineStartFix20260628",
-  "./app.js?v=sielOfflineStartFix20260628",
-  "./manifest.webmanifest?v=sielOfflineStartFix20260628"
+  "./styles.css?v=sielStyleTextFix20260628",
+  "./app.js?v=sielStyleTextFix20260628",
+  "./manifest.webmanifest?v=sielStyleTextFix20260628"
 ];
 
 self.addEventListener("install", (event) => {
@@ -41,14 +41,18 @@ async function cachedIndex() {
   return (await cache.match("./index.html")) || (await cache.match("./")) || (await caches.match("./index.html"));
 }
 
+function rawImageUrl(url) {
+  const clone = new URL(url.toString());
+  clone.searchParams.delete("sielImg");
+  return clone.toString();
+}
+
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
 
-  // 앱 페이지 이동 요청은 오프라인에서도 index.html로 열리게 함.
-  // 예전 홈화면 아이콘이 ?v=sielSyncOverwrite... 같은 오래된 주소를 열어도 앱이 뜹니다.
   if (req.mode === "navigate" && url.origin === self.location.origin) {
     event.respondWith(
       fetch(req)
@@ -67,30 +71,35 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 이미지/Firebase Storage는 온라인이면 최신을 받고, 실패하면 캐시 사용
   if (isImageRequest(req, url)) {
     event.respondWith(
       caches.open(IMAGE_CACHE).then(async (cache) => {
         const cached = await cache.match(req);
+        const rawUrl = rawImageUrl(url);
+        const cachedRaw = await cache.match(rawUrl);
 
         if (self.navigator.onLine) {
           try {
             const response = await fetch(req, { cache: "reload" });
             if (response && (response.ok || response.type === "opaque")) {
               await cache.put(req, response.clone());
+              await cache.put(rawUrl, response.clone());
               return response;
             }
           } catch (e) {
             if (cached) return cached;
+            if (cachedRaw) return cachedRaw;
           }
         }
 
         if (cached) return cached;
+        if (cachedRaw) return cachedRaw;
 
         try {
           const response = await fetch(req);
           if (response && (response.ok || response.type === "opaque")) {
             await cache.put(req, response.clone());
+            await cache.put(rawUrl, response.clone());
           }
           return response;
         } catch (e) {
@@ -101,12 +110,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Firebase/Google API는 온라인 요청만. 데이터는 app.js localStorage가 담당.
   if (url.hostname.includes("googleapis.com") || url.hostname.includes("firebase")) {
     return;
   }
 
-  // 앱 정적 파일은 캐시 우선
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
