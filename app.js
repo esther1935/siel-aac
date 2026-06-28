@@ -8,8 +8,6 @@ let sentenceCards = [];
 let searchTerm = "";
 let selectedCardId = "";
 let editingCardId = "";
-let adminCardPage = 1;
-const ADMIN_CARD_PAGE_SIZE = 12;
 let firebaseReady = false;
 let db = null;
 
@@ -599,7 +597,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielUploadButtonFix20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielAdminFinal20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -662,83 +660,45 @@ function renderAdmin() {
   const del = $("deleteList");
   del.innerHTML = "";
 
-  const allCards = [];
   data.categories.forEach(cat => {
-    cat.cards.forEach(card => allCards.push({ cat, card }));
+    cat.cards.forEach(card => {
+      const row = document.createElement("div");
+      row.className = "deleteItem";
+      row.innerHTML = `
+        <div class="deleteThumb">${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
+        <button class="editCardBtn" type="button"><strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong></button>
+        <button class="smallEditBtn" type="button">수정</button>
+        <button class="deleteBtn" type="button">삭제</button>
+      `;
+
+      const startEdit = () => {
+        editingCardId = card.id;
+        $("categorySelect").value = cat.id;
+        $("cardText").value = card.text || "";
+        $("cardSpeak").value = card.text || "";
+        $("imageInput").value = "";
+        $("addCardBtn").textContent = "수정 저장";
+        $("cancelEditBtn").classList.remove("hidden");
+        $("editStatus").textContent = `'${card.text}' 수정 모드입니다. 이름만 바꾸거나 새 사진을 선택해 교체할 수 있습니다.`;
+        $("cardText").focus();
+      };
+
+      row.querySelector(".editCardBtn").onclick = startEdit;
+      row.querySelector(".smallEditBtn").onclick = startEdit;
+
+      row.querySelector(".deleteBtn").onclick = async () => {
+        if (confirm(`'${card.text}' 그림을 삭제할까요?`)) {
+          await deleteImageFromStorageIfReady(card);
+          cat.cards = cat.cards.filter(c => c.id !== card.id);
+          sentenceCards = sentenceCards.filter(c => c.id !== card.id);
+          if (editingCardId === card.id) resetEditMode();
+          saveData();
+        }
+      };
+
+      del.appendChild(row);
+    });
   });
-
-  const totalPages = Math.max(1, Math.ceil(allCards.length / ADMIN_CARD_PAGE_SIZE));
-  if (adminCardPage > totalPages) adminCardPage = totalPages;
-  if (adminCardPage < 1) adminCardPage = 1;
-
-  const startIndex = (adminCardPage - 1) * ADMIN_CARD_PAGE_SIZE;
-  const pageItems = allCards.slice(startIndex, startIndex + ADMIN_CARD_PAGE_SIZE);
-
-  pageItems.forEach(({ cat, card }) => {
-    const row = document.createElement("div");
-    row.className = "deleteItem";
-    const sizeText = getCardImageSizeText(card);
-    row.innerHTML = `
-      <div class="deleteThumb">${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="thumbEmpty"></div>`}</div>
-      <button class="editCardBtn" type="button">
-        <strong>${escapeHtml(cat.name)} / ${escapeHtml(card.text)}</strong>
-        ${sizeText ? `<span class="adminImageSizeText">${escapeHtml(sizeText)}</span>` : ""}
-      </button>
-      <button class="smallEditBtn" type="button">수정</button>
-      <button class="deleteBtn" type="button">삭제</button>
-    `;
-
-    const startEdit = () => {
-      editingCardId = card.id;
-      $("categorySelect").value = cat.id;
-      $("cardText").value = card.text || "";
-      $("cardSpeak").value = card.text || "";
-      $("imageInput").value = "";
-      $("addCardBtn").textContent = "수정 저장";
-      $("cancelEditBtn").classList.remove("hidden");
-      $("editStatus").textContent = `'${card.text}' 수정 모드입니다. 이름만 바꾸거나 새 사진을 선택해 교체할 수 있습니다.`;
-      $("cardText").focus();
-    };
-
-    row.querySelector(".editCardBtn").onclick = startEdit;
-    row.querySelector(".smallEditBtn").onclick = startEdit;
-
-    row.querySelector(".deleteBtn").onclick = async () => {
-      if (confirm(`'${card.text}' 그림을 삭제할까요?`)) {
-        await deleteImageFromStorageIfReady(card);
-        cat.cards = cat.cards.filter(c => c.id !== card.id);
-        sentenceCards = sentenceCards.filter(c => c.id !== card.id);
-        if (editingCardId === card.id) resetEditMode();
-        saveData();
-      }
-    };
-
-    del.appendChild(row);
-  });
-
-  const pager = document.createElement("div");
-  pager.className = "adminPager";
-  pager.innerHTML = `
-    <button id="adminPrevPageBtn" type="button" ${adminCardPage <= 1 ? "disabled" : ""}>‹ 이전</button>
-    <span>${adminCardPage} / ${totalPages} · 총 ${allCards.length}개</span>
-    <button id="adminNextPageBtn" type="button" ${adminCardPage >= totalPages ? "disabled" : ""}>다음 ›</button>
-  `;
-  del.appendChild(pager);
-
-  const prev = $("adminPrevPageBtn");
-  const next = $("adminNextPageBtn");
-  if (prev) prev.onclick = () => {
-    if (adminCardPage > 1) {
-      adminCardPage -= 1;
-      renderAdmin();
-    }
-  };
-  if (next) next.onclick = () => {
-    if (adminCardPage < totalPages) {
-      adminCardPage += 1;
-      renderAdmin();
-    }
-  };
 
   if ($("boardText")) $("boardText").value = data.board || "";
   if ($("boardView")) $("boardView").textContent = data.board || "게시판 내용이 없습니다.";
@@ -1024,7 +984,6 @@ $("addCardBtn").onclick = async () => {
         const uploaded = await uploadImageToStorageIfReady(file, card.id);
         card.image = uploaded.image;
         card.storagePath = uploaded.storagePath || "";
-        addImageSizeMetaToCard(card, originalFile, file);
       }
 
       sentenceCards = sentenceCards.map(c => c.id === card.id ? {
@@ -1050,9 +1009,7 @@ $("addCardBtn").onclick = async () => {
       storagePath = uploaded.storagePath || "";
     }
 
-    const newCard = { id: cardId, text, speak: text, image, storagePath };
-    if (file) addImageSizeMetaToCard(newCard, originalFile, file);
-    cat.cards.push(newCard);
+    cat.cards.push({ id: cardId, text, speak: text, image, storagePath });
     selectedCategoryId = cat.id;
     resetEditMode();
     saveData();
@@ -1158,7 +1115,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielUploadButtonFix20260628");
+    const configModule = await import("./firebase-config.js?v=sielAdminFinal20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1385,661 +1342,251 @@ setInterval(refreshAdminImageSizeLabels, 1200);
 document.addEventListener("click", () => setTimeout(refreshAdminImageSizeLabels, 250), true);
 
 
-/* ADMIN FLOW FIX 20260628 */
-function showAdminPasswordOnly() {
-  const dialog = $("adminDialog");
-  const pin = $("pinInput");
-  const login = $("loginBtn");
-  const menu = document.querySelector("#adminDialog .adminMenu");
-  const panel = $("adminPanel");
-  const upload = $("uploadPanel");
-  const board = $("boardPanel");
+/* ADMIN FINAL PATCH 20260628 */
+const SIEL_ADMIN_PASSWORD = window.SIEL_ADMIN_PASSWORD || "1935";
+let sielAdminUnlocked = false;
+let sielAdminPage = 1;
+const SIEL_ADMIN_PAGE_SIZE = 12;
 
-  if (pin) {
-    pin.value = "";
-    pin.classList.remove("hidden");
-    pin.style.display = "";
-  }
-  if (login) {
-    login.classList.remove("hidden");
-    login.style.display = "";
-    login.textContent = "확인";
-  }
-  if (menu) menu.style.display = "none";
-  if (panel) {
-    panel.classList.add("hidden");
-    panel.style.display = "none";
-  }
-  if (upload) {
-    upload.classList.remove("hidden");
-    upload.style.display = "none";
-  }
-  if (board) {
-    board.classList.add("hidden");
-    board.style.display = "none";
+function sielGetAllCardsWithCategory() {
+  try {
+    return data.categories.flatMap(cat =>
+      (cat.cards || []).map(card => ({ ...card, __categoryId: cat.id, __categoryName: cat.name }))
+    );
+  } catch (e) {
+    return [];
   }
 }
 
-function showAdminMenuOnly() {
-  const pin = $("pinInput");
-  const login = $("loginBtn");
-  const menu = document.querySelector("#adminDialog .adminMenu");
-  const panel = $("adminPanel");
-  const upload = $("uploadPanel");
-  const board = $("boardPanel");
-
-  if (pin) pin.style.display = "none";
-  if (login) login.style.display = "none";
-  if (menu) menu.style.display = "grid";
-  if (panel) {
-    panel.classList.add("hidden");
-    panel.style.display = "none";
-  }
-  if (upload) upload.style.display = "none";
-  if (board) board.style.display = "none";
+function sielFormatSize(bytes) {
+  const n = Number(bytes || 0);
+  if (!n || Number.isNaN(n)) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-function showAdminUploadOnly() {
-  const menu = document.querySelector("#adminDialog .adminMenu");
-  const panel = $("adminPanel");
-  const upload = $("uploadPanel");
-  const board = $("boardPanel");
-  if (menu) menu.style.display = "grid";
-  if (panel) {
-    panel.classList.remove("hidden");
-    panel.style.display = "";
-  }
-  if (upload) {
-    upload.classList.remove("hidden");
-    upload.style.display = "";
-  }
-  if (board) {
-    board.classList.add("hidden");
-    board.style.display = "none";
-  }
-  adminCardPage = 1;
-  renderAdmin();
+function sielCardSizeText(card) {
+  if (!card) return "";
+  return sielFormatSize(card.compressedSize || card.imageSize || card.sizeBytes || card.fileSize || card.bytes || 0);
 }
 
-function showAdminBoardOnly() {
-  const menu = document.querySelector("#adminDialog .adminMenu");
-  const panel = $("adminPanel");
-  const upload = $("uploadPanel");
-  const board = $("boardPanel");
-  if (menu) menu.style.display = "grid";
-  if (panel) {
-    panel.classList.remove("hidden");
-    panel.style.display = "";
-  }
-  if (upload) {
-    upload.classList.add("hidden");
-    upload.style.display = "none";
-  }
-  if (board) {
-    board.classList.remove("hidden");
-    board.style.display = "";
-  }
-}
-
-function wireAdminFlowFix() {
-  const menuBtn = $("menuBtn");
-  const login = $("loginBtn");
-  const pin = $("pinInput");
-  const showUpload = $("showUploadBtn");
-  const showBoard = $("showBoardBtn");
-
-  if (menuBtn && menuBtn.dataset.adminFlowFixed !== "1") {
-    menuBtn.dataset.adminFlowFixed = "1";
-    menuBtn.onclick = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      $("adminDialog").showModal();
-      showAdminPasswordOnly();
-      setTimeout(() => $("pinInput") && $("pinInput").focus(), 60);
-    };
-  }
-
-  if (login && login.dataset.adminFlowFixed !== "1") {
-    login.dataset.adminFlowFixed = "1";
-    login.onclick = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      if ($("pinInput").value === ADMIN_PIN || $("pinInput").value === "1935") {
-        showAdminMenuOnly();
-      } else {
-        alert("PIN이 달라요.");
-        $("pinInput").value = "";
-        $("pinInput").focus();
-      }
-    };
-  }
-
-  if (pin && pin.dataset.adminFlowFixed !== "1") {
-    pin.dataset.adminFlowFixed = "1";
-    pin.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        login.click();
-      }
-    });
-  }
-
-  if (showUpload && showUpload.dataset.adminFlowFixed !== "1") {
-    showUpload.dataset.adminFlowFixed = "1";
-    showUpload.onclick = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      showAdminUploadOnly();
-    };
-  }
-
-  if (showBoard && showBoard.dataset.adminFlowFixed !== "1") {
-    showBoard.dataset.adminFlowFixed = "1";
-    showBoard.onclick = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      showAdminBoardOnly();
-    };
-  }
-}
-
-setInterval(wireAdminFlowFix, 500);
-document.addEventListener("DOMContentLoaded", wireAdminFlowFix);
-
-
-/* ROLE ADMIN FINAL 20260628
-   역할별 관리자:
-   - 엄마: 전체 관리자 진입
-   - 학교/늘봄/언어치료/사회성치료/교회: 해당 카테고리에 업로드만 가능
-   - 제한 관리자는 삭제/카테고리관리/백업을 볼 수 없음
-*/
-
-const SIEL_ROLE_ADMINS = [
-  { id: "mom", label: "엄마", pin: "1935", type: "full", category: "" },
-  { id: "school", label: "학교", pin: "1001", type: "limited", category: "학교" },
-  { id: "neulbom", label: "늘봄", pin: "1002", type: "limited", category: "늘봄" },
-  { id: "speech", label: "언어치료", pin: "1003", type: "limited", category: "언어치료" },
-  { id: "social", label: "사회성치료", pin: "1004", type: "limited", category: "사회성치료" },
-  { id: "church", label: "교회", pin: "1005", type: "limited", category: "교회" }
-];
-
-let sielCurrentRoleAdmin = null;
-
-function sielRoleEscape(text) {
-  return String(text || "").replace(/[&<>"']/g, s => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-  }[s]));
-}
-
-function sielFindCategoryByName(name) {
-  return data.categories.find(cat => (cat.name || "").trim() === name);
-}
-
-function sielEnsureCategory(name) {
-  let cat = sielFindCategoryByName(name);
-  if (!cat) {
-    cat = { id: crypto.randomUUID(), name, icon: (categoryIcons && categoryIcons[name]) || "▫️", cards: [] };
-    data.categories.push(cat);
-    saveData();
-  }
-  return cat;
-}
-
-function sielRoleOverlay() {
-  let el = document.getElementById("sielRoleOverlay");
+function sielAdminOverlay() {
+  let el = document.getElementById("sielAdminOverlay");
   if (!el) {
     el = document.createElement("div");
-    el.id = "sielRoleOverlay";
-    el.className = "sielRoleOverlay";
+    el.id = "sielAdminOverlay";
+    el.className = "sielAdminOverlay";
     document.body.appendChild(el);
   }
   return el;
 }
 
-function sielCloseRoleOverlay() {
-  const el = document.getElementById("sielRoleOverlay");
+function sielCloseAdminOverlay() {
+  const el = document.getElementById("sielAdminOverlay");
   if (el) el.remove();
 }
 
-function sielShowRoleLogin() {
-  const el = sielRoleOverlay();
+function sielShowAdminPassword() {
+  const el = sielAdminOverlay();
   el.innerHTML = `
-    <div class="sielRoleCard">
-      <button class="sielRoleClose" type="button">×</button>
-      <h2>관리자 로그인</h2>
-      <p class="sielRoleSub">사용할 관리자 역할을 선택해 주세요.</p>
-      <div class="sielRoleList">
-        ${SIEL_ROLE_ADMINS.map(role => `
-          <button class="sielRoleSelectBtn" type="button" data-role="${role.id}">
-            ${sielRoleEscape(role.label)}
-          </button>
-        `).join("")}
-      </div>
+    <div class="sielAdminCard sielAdminPasswordCard">
+      <button class="sielAdminClose" type="button" aria-label="닫기">×</button>
+      <h2>관리자</h2>
+      <p class="sielAdminSub">비밀번호를 입력해 주세요.</p>
+      <input class="sielAdminPasswordInput" type="password" inputmode="numeric" autocomplete="off" placeholder="비밀번호" />
+      <button class="sielAdminPrimary" type="button">확인</button>
+      <p class="sielAdminError" aria-live="polite"></p>
     </div>
   `;
-  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
-  el.querySelectorAll(".sielRoleSelectBtn").forEach(btn => {
-    btn.onclick = () => {
-      const role = SIEL_ROLE_ADMINS.find(r => r.id === btn.dataset.role);
-      sielShowRolePin(role);
-    };
-  });
-}
 
-function sielShowRolePin(role) {
-  const el = sielRoleOverlay();
-  el.innerHTML = `
-    <div class="sielRoleCard">
-      <button class="sielRoleClose" type="button">×</button>
-      <button class="sielRoleBack" type="button">‹ 역할 선택</button>
-      <h2>${sielRoleEscape(role.label)} 관리자</h2>
-      <p class="sielRoleSub">비밀번호를 입력해 주세요.</p>
-      <input class="sielRolePinInput" type="password" inputmode="numeric" autocomplete="off" placeholder="비밀번호" />
-      <button class="sielRolePrimary" type="button">확인</button>
-      <p class="sielRoleError"></p>
-    </div>
-  `;
-  const input = el.querySelector(".sielRolePinInput");
-  const error = el.querySelector(".sielRoleError");
-  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
-  el.querySelector(".sielRoleBack").onclick = sielShowRoleLogin;
+  const input = el.querySelector(".sielAdminPasswordInput");
+  const ok = el.querySelector(".sielAdminPrimary");
+  const close = el.querySelector(".sielAdminClose");
+  const err = el.querySelector(".sielAdminError");
+
   const submit = () => {
-    if (input.value === role.pin) {
-      sielCurrentRoleAdmin = role;
-      if (role.type === "full") {
-        sielShowFullAdminMenu();
-      } else {
-        sielShowLimitedUploader(role);
-      }
+    if (input.value === SIEL_ADMIN_PASSWORD) {
+      sielAdminUnlocked = true;
+      sielShowAdminMenu();
     } else {
-      error.textContent = "비밀번호가 맞지 않습니다.";
+      err.textContent = "비밀번호가 맞지 않습니다.";
       input.value = "";
       input.focus();
     }
   };
-  el.querySelector(".sielRolePrimary").onclick = submit;
-  input.onkeydown = e => { if (e.key === "Enter") submit(); };
+
+  ok.addEventListener("click", submit);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  close.addEventListener("click", sielCloseAdminOverlay);
   setTimeout(() => input.focus(), 50);
 }
 
-function sielShowFullAdminMenu() {
-  const el = sielRoleOverlay();
+function sielShowAdminMenu() {
+  const el = sielAdminOverlay();
   el.innerHTML = `
-    <div class="sielRoleCard">
-      <button class="sielRoleClose" type="button">×</button>
-      <h2>엄마 관리자</h2>
-      <button class="sielRoleMenuBtn" type="button" data-full="open">전체 관리자 열기</button>
-      <button class="sielRoleMenuBtn" type="button" data-full="pending">승인대기 보기</button>
-      <button class="sielRoleMenuBtn" type="button" data-full="roles">권한 안내</button>
+    <div class="sielAdminCard sielAdminMenuCard">
+      <button class="sielAdminClose" type="button" aria-label="닫기">×</button>
+      <h2>관리자 메뉴</h2>
+      <button class="sielAdminMenuBtn" type="button" data-admin-menu="images">그림 올리기</button>
+      <button class="sielAdminMenuBtn" type="button" data-admin-menu="board">게시판</button>
     </div>
   `;
-  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
-  el.querySelector('[data-full="open"]').onclick = () => {
-    sielCloseRoleOverlay();
-    const dialog = document.getElementById("adminDialog");
-    if (dialog && typeof dialog.showModal === "function") {
-      dialog.showModal();
-      const pin = document.getElementById("pinInput");
-      const login = document.getElementById("loginBtn");
-      if (pin) pin.value = "1935";
-      if (login) setTimeout(() => login.click(), 80);
-    }
-  };
-  el.querySelector('[data-full="pending"]').onclick = sielShowPendingUploads;
-  el.querySelector('[data-full="roles"]').onclick = sielShowRoleInfo;
-}
 
-function sielPendingUploads() {
-  return JSON.parse(localStorage.getItem("siel_pending_uploads_v1") || "[]");
-}
+  el.querySelector(".sielAdminClose").addEventListener("click", sielCloseAdminOverlay);
+  el.querySelector('[data-admin-menu="images"]').addEventListener("click", () => {
+    sielCloseAdminOverlay();
+    setTimeout(() => {
+      if (typeof openAdmin === "function") openAdmin();
+      else if (typeof showAdmin === "function") showAdmin();
+      else if (typeof renderAdmin === "function") renderAdmin();
+      else {
+        const existing = document.querySelector("[data-open-admin], .adminOpen, #adminOpen");
+        if (existing) existing.click();
+      }
+      sielAdminPage = 1;
+      setTimeout(sielApplyAdminPagination, 400);
+    }, 50);
+  });
 
-function sielSavePendingUploads(items) {
-  localStorage.setItem("siel_pending_uploads_v1", JSON.stringify(items || []));
-}
-
-function sielShowRoleInfo() {
-  const el = sielRoleOverlay();
-  el.innerHTML = `
-    <div class="sielRoleCard sielRoleWide">
-      <button class="sielRoleClose" type="button">×</button>
-      <button class="sielRoleBack" type="button">‹ 엄마 메뉴</button>
-      <h2>권한 안내</h2>
-      <div class="sielRoleInfo">
-        <p><b>엄마</b> : 전체 관리자</p>
-        <p><b>학교</b> : 학교 카테고리 업로드만 가능</p>
-        <p><b>늘봄</b> : 늘봄 카테고리 업로드만 가능</p>
-        <p><b>언어치료</b> : 언어치료 카테고리 업로드만 가능</p>
-        <p><b>사회성치료</b> : 사회성치료 카테고리 업로드만 가능</p>
-        <p><b>교회</b> : 교회 카테고리 업로드만 가능</p>
-      </div>
-    </div>
-  `;
-  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
-  el.querySelector(".sielRoleBack").onclick = sielShowFullAdminMenu;
-}
-
-async function sielCompressForRole(file) {
-  if (typeof compressImageFile === "function") return await compressImageFile(file);
-  return file;
-}
-
-function sielFileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  el.querySelector('[data-admin-menu="board"]').addEventListener("click", () => {
+    sielShowBoardPanel();
   });
 }
 
-function sielShowLimitedUploader(role) {
-  const el = sielRoleOverlay();
+function sielShowBoardPanel() {
+  const el = sielAdminOverlay();
   el.innerHTML = `
-    <div class="sielRoleCard sielRoleWide">
-      <button class="sielRoleClose" type="button">×</button>
-      <button class="sielRoleBack" type="button">‹ 역할 선택</button>
-      <h2>${sielRoleEscape(role.label)} 업로드</h2>
-      <p class="sielRoleSub">${sielRoleEscape(role.category)} 카테고리에만 사진을 올릴 수 있습니다.</p>
-
-      <label class="sielRoleLabel">사진 찍기/선택</label>
-      <input class="sielRoleFile" type="file" accept="image/*" capture="environment" />
-
-      <label class="sielRoleLabel">그림 이름</label>
-      <input class="sielRoleName" type="text" placeholder="예: 급식실" />
-
-      <button class="sielRolePrimary" type="button">승인대기로 저장</button>
-      <p class="sielRoleSub sielRoleStatus"></p>
+    <div class="sielAdminCard sielBoardCard">
+      <button class="sielAdminClose" type="button" aria-label="닫기">×</button>
+      <h2>게시판</h2>
+      <p class="sielAdminSub">게시판 영역입니다. 추후 공지나 기록을 연결할 수 있습니다.</p>
+      <textarea class="sielBoardTextarea" placeholder="메모를 남겨둘 수 있어요."></textarea>
+      <button class="sielAdminMenuBtn" type="button" data-admin-menu="back">관리자 메뉴로 돌아가기</button>
     </div>
   `;
-  const fileInput = el.querySelector(".sielRoleFile");
-  const nameInput = el.querySelector(".sielRoleName");
-  const status = el.querySelector(".sielRoleStatus");
-  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
-  el.querySelector(".sielRoleBack").onclick = sielShowRoleLogin;
-
-  el.querySelector(".sielRolePrimary").onclick = async () => {
-    const originalFile = fileInput.files[0];
-    const text = nameInput.value.trim();
-    if (!originalFile || !text) {
-      status.textContent = "사진과 그림 이름을 입력해 주세요.";
-      return;
-    }
-
-    status.textContent = "압축 중입니다...";
-    try {
-      const file = await sielCompressForRole(originalFile);
-      const dataUrl = await sielFileToDataUrl(file);
-      const pending = sielPendingUploads();
-      pending.push({
-        id: crypto.randomUUID(),
-        roleId: role.id,
-        roleLabel: role.label,
-        category: role.category,
-        text,
-        image: dataUrl,
-        imageSize: file.size || 0,
-        originalSize: originalFile.size || 0,
-        imageType: file.type || "",
-        createdAt: Date.now()
-      });
-      sielSavePendingUploads(pending);
-      const kb = file.size ? Math.round(file.size / 1024) + "KB" : "";
-      status.textContent = `승인대기에 저장되었습니다. ${kb}`;
-      fileInput.value = "";
-      nameInput.value = "";
-    } catch (e) {
-      console.error(e);
-      status.textContent = "저장 중 오류가 났습니다.";
-    }
-  };
+  el.querySelector(".sielAdminClose").addEventListener("click", sielCloseAdminOverlay);
+  el.querySelector('[data-admin-menu="back"]').addEventListener("click", sielShowAdminMenu);
 }
 
-function sielShowPendingUploads() {
-  const pending = sielPendingUploads();
-  const el = sielRoleOverlay();
-  el.innerHTML = `
-    <div class="sielRoleCard sielRoleWide">
-      <button class="sielRoleClose" type="button">×</button>
-      <button class="sielRoleBack" type="button">‹ 엄마 메뉴</button>
-      <h2>승인대기</h2>
-      <div class="sielPendingList">
-        ${pending.length ? pending.map(item => `
-          <div class="sielPendingItem" data-id="${item.id}">
-            <img src="${item.image}" alt="" />
-            <div class="sielPendingInfo">
-              <b>${sielRoleEscape(item.category)} / ${sielRoleEscape(item.text)}</b>
-              <span>${item.imageSize ? Math.round(item.imageSize / 1024) + "KB" : ""}</span>
-            </div>
-            <button type="button" data-action="approve">승인</button>
-            <button type="button" data-action="delete">삭제</button>
-          </div>
-        `).join("") : `<p class="sielRoleSub">승인대기 사진이 없습니다.</p>`}
-      </div>
-    </div>
-  `;
-  el.querySelector(".sielRoleClose").onclick = sielCloseRoleOverlay;
-  el.querySelector(".sielRoleBack").onclick = sielShowFullAdminMenu;
-
-  el.querySelectorAll(".sielPendingItem").forEach(row => {
-    const id = row.dataset.id;
-    const item = pending.find(x => x.id === id);
-    row.querySelector('[data-action="approve"]').onclick = async () => {
-      const cat = sielEnsureCategory(item.category);
-      const card = {
-        id: crypto.randomUUID(),
-        text: item.text,
-        speak: item.text,
-        image: item.image,
-        storagePath: "",
-        imageSize: item.imageSize || 0,
-        compressedSize: item.imageSize || 0,
-        originalSize: item.originalSize || 0,
-        imageType: item.imageType || "",
-        createdBy: item.roleLabel || "",
-        updatedAt: Date.now()
-      };
-      cat.cards.push(card);
-      saveData();
-      sielSavePendingUploads(sielPendingUploads().filter(x => x.id !== id));
-      sielShowPendingUploads();
-    };
-    row.querySelector('[data-action="delete"]').onclick = () => {
-      if (!confirm("이 승인대기 사진을 삭제할까요?")) return;
-      sielSavePendingUploads(sielPendingUploads().filter(x => x.id !== id));
-      sielShowPendingUploads();
-    };
-  });
-}
-
-function sielWireRoleEntry() {
+function sielHookAdminEntry() {
   const buttons = Array.from(document.querySelectorAll("button, [role='button']"));
   const candidates = buttons.filter(btn => {
     const t = (btn.textContent || "").trim();
     const aria = (btn.getAttribute("aria-label") || "").toLowerCase();
     const cls = (btn.className || "").toString().toLowerCase();
     const id = (btn.id || "").toLowerCase();
-    return t === "☰" || t === "≡" || t.includes("☰") || aria.includes("menu") || aria.includes("메뉴") || cls.includes("hamburger") || id.includes("menu");
+    return t === "☰" || t === "≡" || t.includes("☰") || aria.includes("menu") || aria.includes("메뉴") || cls.includes("hamburger") || cls.includes("menu") || id.includes("menu");
   });
 
   candidates.forEach(btn => {
-    if (btn.dataset.sielRoleHooked === "1") return;
-    btn.dataset.sielRoleHooked = "1";
-    btn.addEventListener("click", e => {
+    if (btn.dataset.sielAdminHooked === "1") return;
+    btn.dataset.sielAdminHooked = "1";
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      sielShowRoleLogin();
+      sielShowAdminPassword();
     }, true);
   });
 }
 
-setInterval(sielWireRoleEntry, 800);
-document.addEventListener("DOMContentLoaded", sielWireRoleEntry);
+function sielApplyAdminSizeText(root = document) {
+  const cards = sielGetAllCardsWithCategory();
+  root.querySelectorAll("img").forEach(img => {
+    const src = img.getAttribute("src") || "";
+    if (!src) return;
+    const pure = src.split("?")[0];
+    const card = cards.find(c => c.image && (c.image === src || c.image.split("?")[0] === pure || src.includes(c.image) || c.image.includes(pure)));
+    if (!card) return;
+    const size = sielCardSizeText(card);
+    if (!size) return;
 
+    const row = img.closest(".adminImageRow, .deleteRow, .imageRow, li, .adminItem, .manageItem, .pictureItem, .cardManageItem, div");
+    if (!row || row.querySelector(".adminImageSizeText")) return;
 
-/* UPLOAD BUTTON FIX 20260628
-   엄마 관리자 → 그림 올리기 버튼을 눌렀을 때 다시 비밀번호로 돌아가지 않고
-   기존 adminDialog의 그림 올리기(uploadPanel)를 바로 열도록 보정합니다. */
+    const span = document.createElement("span");
+    span.className = "adminImageSizeText";
+    span.textContent = size;
 
-function sielOpenUploadPanelDirect() {
-  const roleOverlay = document.getElementById("sielRoleOverlay");
-  if (roleOverlay) roleOverlay.remove();
+    const target = row.querySelector("strong, b, .name, .title, .label, input[type='text']");
+    if (target) target.insertAdjacentElement("afterend", span);
+    else row.appendChild(span);
+  });
+}
 
-  const dialog = document.getElementById("adminDialog");
-  if (!dialog) {
-    alert("관리자 화면을 찾지 못했습니다.");
+function sielFindAdminImageRows() {
+  const roots = Array.from(document.querySelectorAll(".adminPanel, .adminContent, .menuPanel, .modal, .drawer, .sidePanel, body"));
+  let bestRows = [];
+  roots.forEach(root => {
+    const rows = Array.from(root.querySelectorAll(".adminImageRow, .deleteRow, .imageRow, li, .adminItem, .manageItem, .pictureItem, .cardManageItem"))
+      .filter(row => row.querySelector("img") && (row.textContent.includes("수정") || row.textContent.includes("삭제") || row.querySelector("button")));
+    if (rows.length > bestRows.length) bestRows = rows;
+  });
+
+  if (!bestRows.length) {
+    bestRows = Array.from(document.querySelectorAll("img")).map(img => img.closest("li, .adminItem, .manageItem, .pictureItem, div")).filter(Boolean);
+    bestRows = [...new Set(bestRows)].filter(row => row.querySelector("img") && row.textContent.length < 300);
+  }
+  return bestRows;
+}
+
+function sielApplyAdminPagination() {
+  sielHookAdminEntry();
+  sielApplyAdminSizeText();
+
+  const rows = sielFindAdminImageRows();
+  if (rows.length <= SIEL_ADMIN_PAGE_SIZE) {
+    const oldPager = document.getElementById("sielAdminPager");
+    if (oldPager) oldPager.remove();
     return;
   }
 
-  try {
-    if (typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
-    else dialog.setAttribute("open", "open");
-  } catch (e) {
-    dialog.setAttribute("open", "open");
+  const total = rows.length;
+  const maxPage = Math.max(1, Math.ceil(total / SIEL_ADMIN_PAGE_SIZE));
+  if (sielAdminPage > maxPage) sielAdminPage = maxPage;
+
+  rows.forEach((row, idx) => {
+    const page = Math.floor(idx / SIEL_ADMIN_PAGE_SIZE) + 1;
+    row.style.display = page === sielAdminPage ? "" : "none";
+  });
+
+  const parent = rows[0].parentElement;
+  if (!parent) return;
+
+  let pager = document.getElementById("sielAdminPager");
+  if (!pager) {
+    pager = document.createElement("div");
+    pager.id = "sielAdminPager";
+    pager.className = "sielAdminPager";
+    parent.insertAdjacentElement("afterend", pager);
   }
 
-  const pin = document.getElementById("pinInput");
-  const login = document.getElementById("loginBtn");
-  const menu = dialog.querySelector(".adminMenu");
-  const panel = document.getElementById("adminPanel");
-  const upload = document.getElementById("uploadPanel");
-  const board = document.getElementById("boardPanel");
-
-  if (pin) {
-    pin.value = "";
-    pin.classList.add("hidden");
-    pin.style.display = "none";
-  }
-  if (login) {
-    login.classList.add("hidden");
-    login.style.display = "none";
-  }
-  if (menu) {
-    menu.classList.remove("hidden");
-    menu.style.display = "grid";
-  }
-  if (panel) {
-    panel.classList.remove("hidden");
-    panel.style.display = "";
-  }
-  if (upload) {
-    upload.classList.remove("hidden");
-    upload.style.display = "";
-  }
-  if (board) {
-    board.classList.add("hidden");
-    board.style.display = "none";
-  }
-
-  if (typeof renderAdmin === "function") {
-    setTimeout(() => renderAdmin(), 50);
-  }
-}
-
-function sielOpenBoardPanelDirect() {
-  const roleOverlay = document.getElementById("sielRoleOverlay");
-  if (roleOverlay) roleOverlay.remove();
-
-  const dialog = document.getElementById("adminDialog");
-  if (!dialog) return;
-
-  try {
-    if (typeof dialog.showModal === "function" && !dialog.open) dialog.showModal();
-    else dialog.setAttribute("open", "open");
-  } catch (e) {
-    dialog.setAttribute("open", "open");
-  }
-
-  const pin = document.getElementById("pinInput");
-  const login = document.getElementById("loginBtn");
-  const menu = dialog.querySelector(".adminMenu");
-  const panel = document.getElementById("adminPanel");
-  const upload = document.getElementById("uploadPanel");
-  const board = document.getElementById("boardPanel");
-
-  if (pin) {
-    pin.value = "";
-    pin.classList.add("hidden");
-    pin.style.display = "none";
-  }
-  if (login) {
-    login.classList.add("hidden");
-    login.style.display = "none";
-  }
-  if (menu) {
-    menu.classList.remove("hidden");
-    menu.style.display = "grid";
-  }
-  if (panel) {
-    panel.classList.remove("hidden");
-    panel.style.display = "";
-  }
-  if (upload) {
-    upload.classList.add("hidden");
-    upload.style.display = "none";
-  }
-  if (board) {
-    board.classList.remove("hidden");
-    board.style.display = "";
-  }
-}
-
-function sielShowFullAdminMenuFixed() {
-  const el = sielRoleOverlay ? sielRoleOverlay() : document.getElementById("sielRoleOverlay");
-  if (!el) return;
-
-  el.innerHTML = `
-    <div class="sielRoleCard">
-      <button class="sielRoleClose" type="button">×</button>
-      <h2>엄마 관리자</h2>
-      <button class="sielRoleMenuBtn" type="button" data-fixed-admin="upload">그림 올리기</button>
-      <button class="sielRoleMenuBtn" type="button" data-fixed-admin="board">게시판</button>
-      <button class="sielRoleMenuBtn" type="button" data-fixed-admin="pending">승인대기 보기</button>
-    </div>
+  pager.innerHTML = `
+    <button type="button" class="sielPagerBtn" ${sielAdminPage <= 1 ? "disabled" : ""}>‹ 이전</button>
+    <span class="sielPagerText">${sielAdminPage} / ${maxPage} · 총 ${total}개</span>
+    <button type="button" class="sielPagerBtn" ${sielAdminPage >= maxPage ? "disabled" : ""}>다음 ›</button>
   `;
 
-  const close = el.querySelector(".sielRoleClose");
-  if (close) close.onclick = () => {
-    const overlay = document.getElementById("sielRoleOverlay");
-    if (overlay) overlay.remove();
-  };
-
-  const uploadBtn = el.querySelector('[data-fixed-admin="upload"]');
-  const boardBtn = el.querySelector('[data-fixed-admin="board"]');
-  const pendingBtn = el.querySelector('[data-fixed-admin="pending"]');
-
-  if (uploadBtn) uploadBtn.onclick = sielOpenUploadPanelDirect;
-  if (boardBtn) boardBtn.onclick = sielOpenBoardPanelDirect;
-  if (pendingBtn) {
-    pendingBtn.onclick = () => {
-      if (typeof sielShowPendingUploads === "function") sielShowPendingUploads();
-      else alert("승인대기 기능을 찾지 못했습니다.");
-    };
-  }
+  const [prev, next] = pager.querySelectorAll("button");
+  prev.addEventListener("click", () => {
+    if (sielAdminPage > 1) {
+      sielAdminPage -= 1;
+      sielApplyAdminPagination();
+    }
+  });
+  next.addEventListener("click", () => {
+    if (sielAdminPage < maxPage) {
+      sielAdminPage += 1;
+      sielApplyAdminPagination();
+    }
+  });
 }
 
-// 기존 역할별 관리자 함수가 있으면 엄마 메뉴만 안전하게 덮어씁니다.
-try {
-  window.sielOpenUploadPanelDirect = sielOpenUploadPanelDirect;
-  window.sielOpenBoardPanelDirect = sielOpenBoardPanelDirect;
-  window.sielShowFullAdminMenu = sielShowFullAdminMenuFixed;
-} catch (e) {}
-
-// 혹시 기존 '그림 올리기' 버튼이 남아 있어도 클릭 시 바로 uploadPanel을 열도록 보정
-document.addEventListener("click", function(e) {
-  const btn = e.target.closest("button");
-  if (!btn) return;
-  const text = (btn.textContent || "").trim();
-  if (text === "그림 올리기" && btn.closest("#sielRoleOverlay")) {
-    e.preventDefault();
-    e.stopPropagation();
-    sielOpenUploadPanelDirect();
+setInterval(() => {
+  sielHookAdminEntry();
+  sielApplyAdminSizeText();
+  if (document.querySelector(".adminPanel, .adminContent, .menuPanel, .modal, .drawer, .sidePanel")) {
+    sielApplyAdminPagination();
   }
-}, true);
+}, 1200);
+document.addEventListener("click", () => setTimeout(sielApplyAdminPagination, 350), true);
