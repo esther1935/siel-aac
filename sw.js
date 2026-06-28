@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielUploadButtonFix20260628";
-const IMAGE_CACHE = "siel-aac-image-cache-uploadbuttonfix";
+const CACHE_NAME = "siel-aac-app-sielAdminFinal20260628";
+const IMAGE_CACHE = "siel-aac-image-cache-v17";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielUploadButtonFix20260628",
-  "./app.js?v=sielUploadButtonFix20260628",
-  "./manifest.webmanifest?v=sielUploadButtonFix20260628"
+  "./styles.css?v=sielAdminFinal20260628",
+  "./app.js?v=sielAdminFinal20260628",
+  "./manifest.webmanifest?v=sielAdminFinal20260628"
 ];
 
 self.addEventListener("install", (event) => {
