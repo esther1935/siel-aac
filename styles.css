@@ -2313,3 +2313,16 @@ hr {
   align-items: center;
   justify-content: center;
 }
+
+/* AUTO CATEGORY ICON */
+.categoryBtn .icon,
+.catBtn .icon,
+.tabBtn .icon,
+.categoryBar button .icon,
+.bottomCategories button .icon,
+.catBar button .icon,
+.tabs button .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

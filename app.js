@@ -645,7 +645,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielCategoryIconFix20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielAutoCategoryIcon20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -1204,7 +1204,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielCategoryIconFix20260628");
+    const configModule = await import("./firebase-config.js?v=sielAutoCategoryIcon20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -2089,3 +2089,119 @@ document.addEventListener("click", function(e) {
     sielOpenUploadPanelDirect();
   }
 }, true);
+
+
+/* AUTO CATEGORY ICON 20260628
+   카테고리 이름을 기준으로 아이콘을 자동 지정합니다.
+   새 카테고리 추가/이름 변경 시에도 자동으로 붙습니다. */
+
+const SIEL_AUTO_CATEGORY_ICONS = {
+  "전체": "🌈",
+  "집": "🏠",
+  "가족": "👨‍👩‍👦",
+  "내마음": "❤️",
+  "내 마음": "❤️",
+  "졸려요": "😪",
+  "먹어요": "🍴",
+  "놀아요": "🛝",
+  "나가요": "🚗",
+  "치료실": "🏥",
+  "학교": "🏫",
+  "늘봄": "🌼",
+  "언어치료": "🗣️",
+  "사회성치료": "🤝",
+  "사회성 치료": "🤝",
+  "교회": "⛪",
+  "병원": "🏥",
+  "화장실": "🚽",
+  "잠자기": "🛏️",
+  "잠": "🛏️",
+  "씻어요": "🚿",
+  "목욕": "🚿",
+  "양치": "🦷",
+  "옷입기": "👕",
+  "옷": "👕",
+  "물마셔요": "🚰",
+  "물": "🚰",
+  "노래": "🎵",
+  "책": "📚",
+  "기차": "🚆",
+  "자동차": "🚙",
+  "승마": "🐴",
+  "수영": "🏊",
+  "공원": "🌳",
+  "놀이터": "🛝",
+  "장난감": "🧸",
+  "토이저러스": "🧸",
+  "마트": "🛒",
+  "편의점": "🏪",
+  "음식": "🍴",
+  "간식": "🍪",
+  "감정": "😊",
+  "주요연": "🎈",
+  "주요어": "🎈",
+  "주요": "🎈"
+};
+
+function sielNormalizeCategoryName(name) {
+  return String(name || "").replace(/\s+/g, "").trim();
+}
+
+function sielGuessCategoryIcon(name) {
+  const raw = String(name || "").trim();
+  const normalized = sielNormalizeCategoryName(raw);
+
+  if (SIEL_AUTO_CATEGORY_ICONS[raw]) return SIEL_AUTO_CATEGORY_ICONS[raw];
+  if (SIEL_AUTO_CATEGORY_ICONS[normalized]) return SIEL_AUTO_CATEGORY_ICONS[normalized];
+
+  for (const key of Object.keys(SIEL_AUTO_CATEGORY_ICONS)) {
+    if (normalized.includes(sielNormalizeCategoryName(key))) {
+      return SIEL_AUTO_CATEGORY_ICONS[key];
+    }
+  }
+
+  return "📁";
+}
+
+function sielApplyAutoCategoryIcons() {
+  try {
+    if (typeof categoryIcons === "object" && categoryIcons) {
+      Object.assign(categoryIcons, SIEL_AUTO_CATEGORY_ICONS);
+    }
+
+    if (typeof data === "object" && data && Array.isArray(data.categories)) {
+      let changed = false;
+      data.categories.forEach(cat => {
+        const nextIcon = sielGuessCategoryIcon(cat.name);
+        if (!cat.icon || cat.icon === "▫️" || cat.icon === "📁" || SIEL_AUTO_CATEGORY_ICONS[cat.name] || SIEL_AUTO_CATEGORY_ICONS[sielNormalizeCategoryName(cat.name)]) {
+          if (cat.icon !== nextIcon) {
+            cat.icon = nextIcon;
+            changed = true;
+          }
+        }
+      });
+      if (changed && typeof saveLocalOnly === "function") saveLocalOnly();
+    }
+  } catch (e) {
+    console.warn("자동 카테고리 아이콘 적용 실패:", e);
+  }
+}
+
+// 카테고리 추가/이름 저장 후 자동 아이콘 반영
+document.addEventListener("click", () => {
+  setTimeout(() => {
+    sielApplyAutoCategoryIcons();
+    if (typeof render === "function") render();
+    if (typeof renderAdmin === "function") renderAdmin();
+  }, 250);
+}, true);
+
+document.addEventListener("DOMContentLoaded", () => {
+  sielApplyAutoCategoryIcons();
+  if (typeof render === "function") setTimeout(render, 100);
+});
+
+setTimeout(() => {
+  sielApplyAutoCategoryIcons();
+  if (typeof render === "function") render();
+}, 500);
