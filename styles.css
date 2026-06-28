@@ -922,3 +922,164 @@ label[for="cardSpeak"],
     font-size: 14px !important;
   }
 }
+
+/* ADMIN CATEGORY + OFFLINE 20260628 */
+.categoryManager {
+  margin: 8px 0 18px;
+  padding: 10px 0 0;
+  border-top: 1px solid #f0d98e;
+}
+
+.categoryManager summary {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 900;
+  margin-bottom: 10px;
+}
+
+.categoryManageList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.categoryManageItem {
+  display: grid;
+  grid-template-columns: 42px minmax(100px, 1fr) 42px 48px 48px 86px 62px;
+  align-items: center;
+  gap: 6px;
+}
+
+.catManageIcon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff7d6;
+  font-size: 22px;
+}
+
+.catRenameInput {
+  height: 42px !important;
+  min-width: 0;
+  font-size: 17px !important;
+  font-weight: 800;
+}
+
+.catCardCount {
+  color: #777;
+  font-size: 13px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.categoryManageItem button {
+  height: 40px;
+  border-radius: 12px;
+  background: #eee;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.categoryManageItem button:disabled {
+  opacity: .35;
+}
+
+.syncStatus {
+  margin: 12px 0 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff7d6;
+  color: #666;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Galaxy 미니탭 같은 낮은 가로형 화면에서만 보정: 휴대폰 비율은 건드리지 않음 */
+@media (orientation: landscape) and (max-height: 720px) {
+  :root {
+    --choice-card-h: clamp(112px, 18vh, 150px);
+    --sentence-card-h: clamp(115px, 25vh, 175px);
+  }
+
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h)
+      minmax(150px, 40fr)
+      minmax(110px, 26fr)
+      var(--cat-h);
+  }
+
+  .sentencePanel {
+    padding:
+      clamp(36px, 5vh, 48px)
+      clamp(16px, 2vw, 24px)
+      clamp(28px, 4vh, 38px);
+  }
+
+  .sentenceChip {
+    grid-template-rows: minmax(0, 4.8fr) minmax(20px, .75fr) !important;
+    padding: 6px !important;
+  }
+
+  .card {
+    grid-template-rows: minmax(0, 4.9fr) minmax(22px, .8fr) !important;
+    padding: 6px !important;
+  }
+
+  .cardSpeak,
+  .sentenceSpeak {
+    display: none !important;
+  }
+
+  .cardImageBox,
+  .sentenceImageBox {
+    padding: 0 !important;
+  }
+
+  .cardImageBox img,
+  .sentenceImageBox img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  .card .label {
+    font-size: clamp(14px, 2.1vw, 18px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .sentenceLabel {
+    font-size: clamp(14px, 2vw, 18px) !important;
+    line-height: 1.02 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .categoryManageItem {
+    grid-template-columns: 36px minmax(90px, 1fr) 34px 40px 40px 68px 54px;
+    gap: 4px;
+  }
+
+  .catManageIcon {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  .catRenameInput {
+    height: 38px !important;
+    font-size: 15px !important;
+  }
+
+  .catCardCount {
+    font-size: 11px;
+  }
+
+  .categoryManageItem button {
+    height: 38px;
+    font-size: 12px;
+  }
+}

@@ -1,6 +1,7 @@
 const ADMIN_PIN = "1208";
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
+const OFFLINE_IMAGE_CACHE = "siel-aac-image-cache-v1";
 
 let selectedCategoryId = "all";
 let sentenceCards = [];
@@ -65,6 +66,7 @@ function loadData() {
       if (!Array.isArray(cat.cards)) cat.cards = [];
       cat.cards.forEach(card => {
         card.speak = card.text || "";
+        if (!card.id) card.id = crypto.randomUUID();
       });
     });
     return parsed;
@@ -106,6 +108,7 @@ function render() {
   renderCategoryBar();
   renderCards();
   renderAdmin();
+  updateSyncStatus();
 }
 
 function renderSentence() {
@@ -294,6 +297,147 @@ function addRecent(card) {
   localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
 }
 
+
+function getCategoryById(id) {
+  return data.categories.find(cat => cat.id === id);
+}
+
+function renderCategoryManageList() {
+  const list = $("categoryManageList");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  data.categories.forEach((cat, index) => {
+    const row = document.createElement("div");
+    row.className = "categoryManageItem";
+    const icon = cat.icon || categoryIcons[cat.name] || "▫️";
+    const count = Array.isArray(cat.cards) ? cat.cards.length : 0;
+
+    row.innerHTML = `
+      <div class="catManageIcon">${escapeHtml(icon)}</div>
+      <input class="catRenameInput" value="${escapeHtml(cat.name)}" aria-label="카테고리 이름" />
+      <span class="catCardCount">${count}개</span>
+      <button class="catUpBtn" type="button" ${index === 0 ? "disabled" : ""}>⬆️</button>
+      <button class="catDownBtn" type="button" ${index === data.categories.length - 1 ? "disabled" : ""}>⬇️</button>
+      <button class="catRenameBtn" type="button">이름 저장</button>
+      <button class="catDeleteBtn" type="button">삭제</button>
+    `;
+
+    const input = row.querySelector(".catRenameInput");
+
+    row.querySelector(".catUpBtn").onclick = () => {
+      if (index <= 0) return;
+      const temp = data.categories[index - 1];
+      data.categories[index - 1] = data.categories[index];
+      data.categories[index] = temp;
+      saveData();
+    };
+
+    row.querySelector(".catDownBtn").onclick = () => {
+      if (index >= data.categories.length - 1) return;
+      const temp = data.categories[index + 1];
+      data.categories[index + 1] = data.categories[index];
+      data.categories[index] = temp;
+      saveData();
+    };
+
+    const saveName = () => {
+      const newName = input.value.trim();
+      if (!newName) {
+        alert("카테고리 이름을 입력해 주세요.");
+        input.value = cat.name;
+        return;
+      }
+      cat.name = newName;
+      cat.icon = categoryIcons[newName] || cat.icon || "▫️";
+      saveData();
+    };
+
+    row.querySelector(".catRenameBtn").onclick = saveName;
+    input.onkeydown = (event) => {
+      if (event.key === "Enter") saveName();
+    };
+
+    row.querySelector(".catDeleteBtn").onclick = () => {
+      const cardCount = Array.isArray(cat.cards) ? cat.cards.length : 0;
+      const msg = cardCount > 0
+        ? `'${cat.name}' 카테고리 안에 그림 ${cardCount}개가 있습니다.\n카테고리를 삭제하면 안의 그림도 함께 삭제됩니다.\n정말 삭제할까요?`
+        : `'${cat.name}' 카테고리를 삭제할까요?`;
+
+      if (!confirm(msg)) return;
+
+      data.categories.splice(index, 1);
+      if (selectedCategoryId === cat.id) selectedCategoryId = "all";
+      if ($("categorySelect") && $("categorySelect").value === cat.id) {
+        $("categorySelect").value = data.categories[0]?.id || "";
+      }
+      saveData();
+    };
+
+    list.appendChild(row);
+  });
+}
+
+function updateSyncStatus(text) {
+  const el = $("syncStatus");
+  if (!el) return;
+
+  if (text) {
+    el.textContent = text;
+    return;
+  }
+
+  if (!navigator.onLine) {
+    el.textContent = "오프라인 모드: 이 기기에 저장된 그림으로 사용할 수 있어요.";
+  } else if (firebaseReady && db) {
+    el.textContent = "온라인 모드: Firebase와 동기화됩니다.";
+  } else {
+    el.textContent = "온라인 준비 중: 저장된 자료로 먼저 열렸어요.";
+  }
+}
+
+async function warmUpImageCache() {
+  if (!("caches" in window)) return;
+
+  try {
+    const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+    const urls = [];
+    data.categories.forEach(cat => {
+      cat.cards.forEach(card => {
+        if (card.image && /^https?:|^data:/.test(card.image)) urls.push(card.image);
+      });
+    });
+
+    await Promise.allSettled(
+      urls.slice(0, 500).map(async (url) => {
+        if (url.startsWith("data:")) return;
+        const cached = await cache.match(url);
+        if (!cached) {
+          const res = await fetch(url, { mode: "no-cors" });
+          await cache.put(url, res);
+        }
+      })
+    );
+  } catch (e) {
+    console.warn("이미지 오프라인 저장 실패:", e);
+  }
+}
+
+async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    updateSyncStatus("이 브라우저는 오프라인 앱 저장을 지원하지 않아요.");
+    return;
+  }
+
+  try {
+    await navigator.serviceWorker.register("./sw.js?v=adminOfflineCategory20260628");
+    updateSyncStatus();
+  } catch (e) {
+    console.warn("서비스워커 등록 실패:", e);
+  }
+}
+
 function renderAdmin() {
   const select = $("categorySelect");
   if (!select) return;
@@ -305,6 +449,8 @@ function renderAdmin() {
     option.textContent = cat.name;
     select.appendChild(option);
   });
+
+  renderCategoryManageList();
 
   const del = $("deleteList");
   del.innerHTML = "";
@@ -432,21 +578,6 @@ async function deleteImageFromStorageIfReady(card) {
     await deleteObject(ref);
   } catch (e) {
     console.warn("Storage 이미지 삭제 실패:", e);
-  }
-}
-
-async function clearOldCachesOnce() {
-  try {
-    if ("caches" in window) {
-      const names = await caches.keys();
-      await Promise.all(names.map(name => caches.delete(name)));
-    }
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map(reg => reg.unregister()));
-    }
-  } catch (e) {
-    console.warn("캐시 정리 실패:", e);
   }
 }
 
@@ -642,7 +773,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=adminFinal20260627");
+    const configModule = await import("./firebase-config.js?v=adminOfflineCategory20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -675,10 +806,15 @@ async function initFirebase() {
         cloud.categories.forEach(cat => {
           if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
           if (!Array.isArray(cat.cards)) cat.cards = [];
+          cat.cards.forEach(card => {
+            card.speak = card.text || "";
+            if (!card.id) card.id = crypto.randomUUID();
+          });
         });
         data = cloud;
         saveLocalOnly();
         render();
+        warmUpImageCache();
       }
     }, (error) => {
       console.error("Firestore 읽기 실패:", error);
@@ -689,12 +825,34 @@ async function initFirebase() {
 }
 
 async function uploadToCloudIfReady() {
+  if (!navigator.onLine) {
+    updateSyncStatus("오프라인 저장 완료: Wi-Fi 연결 후 자동 동기화됩니다.");
+    return;
+  }
   if (!firebaseReady || !db) return;
-  const { doc, setDoc } = firebaseReady;
-  await setDoc(doc(db, "aac", "siel"), { payload: data, updatedAt: Date.now() });
+
+  try {
+    const { doc, setDoc } = firebaseReady;
+    await setDoc(doc(db, "aac", "siel"), { payload: data, updatedAt: Date.now() });
+    updateSyncStatus("클라우드 동기화 완료");
+    warmUpImageCache();
+  } catch (e) {
+    console.warn("클라우드 저장 실패:", e);
+    updateSyncStatus("기기 안에 저장됨: 연결되면 다시 동기화됩니다.");
+  }
 }
 
-clearOldCachesOnce().finally(() => {
+window.addEventListener("online", () => {
+  updateSyncStatus("Wi-Fi 연결됨: 동기화 준비 중");
+  initFirebase().then(() => uploadToCloudIfReady()).catch(console.warn);
+});
+
+window.addEventListener("offline", () => {
+  updateSyncStatus("오프라인 모드: 이 기기에 저장된 그림으로 사용할 수 있어요.");
+});
+
+registerServiceWorker().finally(() => {
   initFirebase();
   render();
+  warmUpImageCache();
 });
