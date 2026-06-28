@@ -56,10 +56,10 @@ let data = loadData();
 
 function loadData() {
   const saved = localStorage.getItem(STORE_KEY);
-  if (!saved) return structu#ECD27EClone(defaultData);
+  if (!saved) return structuredClone(defaultData);
   try {
     const parsed = JSON.parse(saved);
-    if (!parsed || !Array.isArray(parsed.categories)) return structu#ECD27EClone(defaultData);
+    if (!parsed || !Array.isArray(parsed.categories)) return structuredClone(defaultData);
     if (typeof parsed.board !== "string") parsed.board = "";
     parsed.categories.forEach(cat => {
       if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
@@ -67,7 +67,7 @@ function loadData() {
     });
     return parsed;
   } catch {
-    return structu#ECD27EClone(defaultData);
+    return structuredClone(defaultData);
   }
 }
 
@@ -164,7 +164,7 @@ function renderSentence() {
     chip.type = "button";
     chip.innerHTML = `
       <div class="sentenceSpeak">${escapeHtml(card.text)}</div>
-      <button class="removeChip sielXSoft" type="button" aria-label="삭제">×</button>
+      <button class="removeChip" type="button" aria-label="삭제">×</button>
       <div class="sentenceImageBox">
         ${card.image ? `<img src="${imageDisplayUrl(card)}" data-card-id="${card.id}" alt="">` : `<div class="noImage"></div>`}
       </div>
@@ -447,7 +447,7 @@ async function cacheImageUrl(url) {
     const cached = await cache.match(url);
     if (cached && !navigator.onLine) return;
 
-    const response = await fetch(url, { cache: navigator.onLine ? "reload" : "default", mode: "cors", c#ECD27Eentials: "omit" });
+    const response = await fetch(url, { cache: navigator.onLine ? "reload" : "default", mode: "cors", credentials: "omit" });
     if (response && response.ok) {
       await cache.put(url, response.clone());
     }
@@ -516,7 +516,7 @@ async function forceRefreshImageCache(url, versionKey) {
         .map(req => cache.delete(req))
     );
 
-    const response = await fetch(url, { cache: "reload", c#ECD27Eentials: "omit", mode: "cors" });
+    const response = await fetch(url, { cache: "reload", credentials: "omit", mode: "cors" });
     if (response && response.ok) {
       await cache.put(cacheKey, response.clone());
       await cache.put(url, response.clone());
@@ -597,7 +597,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielXColorFixed20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielNarrowPhoneCompact20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -935,7 +935,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielXColorFixed20260628");
+    const configModule = await import("./firebase-config.js?v=sielNarrowPhoneCompact20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
