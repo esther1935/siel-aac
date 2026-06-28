@@ -641,10 +641,63 @@ let cropResolve = null;
 let cropNaturalW = 0;
 let cropNaturalH = 0;
 let cropScale = 1;
+let cropMode = "crop"; // "crop" | "fit"
 
 // 크롭박스 상태
 let cropBox = { x: 20, y: 20, w: 200, h: 200 };
-let dragState = null; // { type: 'move'|'resize', startX, startY, startBox }
+let dragState = null;
+
+function setCropMode(mode) {
+  cropMode = mode;
+  const cropBtn = $("modeCropBtn");
+  const fitBtn = $("modeFitBtn");
+  const overlay = $("cropOverlay");
+  const fitCanvas = $("fitPreviewCanvas");
+  const mainCanvas = $("cropCanvas");
+  const hint = $("cropHint");
+
+  if (mode === "crop") {
+    cropBtn.style.background = "#a78bfa";
+    cropBtn.style.color = "#fff";
+    fitBtn.style.background = "transparent";
+    fitBtn.style.color = "#aaa";
+    overlay.style.display = "";
+    mainCanvas.style.display = "block";
+    fitCanvas.style.display = "none";
+    hint.textContent = "박스를 드래그하거나 캔버스를 눌러 영역을 선택하세요";
+  } else {
+    fitBtn.style.background = "#a78bfa";
+    fitBtn.style.color = "#fff";
+    cropBtn.style.background = "transparent";
+    cropBtn.style.color = "#aaa";
+    overlay.style.display = "none";
+    mainCanvas.style.display = "none";
+    fitCanvas.style.display = "block";
+    hint.textContent = "그림 전체를 정사각형 안에 축소해서 넣습니다";
+    renderFitPreview();
+  }
+}
+
+function renderFitPreview() {
+  const outSize = 300;
+  const canvas = $("fitPreviewCanvas");
+  canvas.width = outSize;
+  canvas.height = outSize;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, outSize, outSize);
+
+  const img = new Image();
+  img.onload = () => {
+    const scale = Math.min(outSize / img.naturalWidth, outSize / img.naturalHeight);
+    const w = Math.round(img.naturalWidth * scale);
+    const h = Math.round(img.naturalHeight * scale);
+    const x = Math.round((outSize - w) / 2);
+    const y = Math.round((outSize - h) / 2);
+    ctx.drawImage(img, x, y, w, h);
+  };
+  img.src = cropImageSrc;
+}
 
 function openCropDialog(file) {
   return new Promise((resolve) => {
@@ -660,7 +713,7 @@ function openCropDialog(file) {
         const canvas = $("cropCanvas");
         const container = $("cropContainer");
         const maxW = Math.min(container.clientWidth || 340, 340);
-        const maxH = Math.min(window.innerHeight * 0.5, 340);
+        const maxH = Math.min(window.innerHeight * 0.48, 320);
 
         cropScale = Math.min(maxW / cropNaturalW, maxH / cropNaturalH, 1);
         canvas.width = Math.round(cropNaturalW * cropScale);
@@ -677,11 +730,16 @@ function openCropDialog(file) {
           w: Math.round(size),
           h: Math.round(size)
         };
+
+        // 항상 자르기 모드로 시작
+        setCropMode("crop");
         drawCropOverlay();
         $("cropDialog").showModal();
       };
+      img.onerror = () => resolve(null);
       img.src = e.target.result;
     };
+    reader.onerror = () => resolve(null);
     reader.readAsDataURL(file);
   });
 }
@@ -720,13 +778,16 @@ function getEventPos(e) {
   return { x: clientX - rect.left, y: clientY - rect.top };
 }
 
+$("modeCropBtn").onclick = () => setCropMode("crop");
+$("modeFitBtn").onclick = () => setCropMode("fit");
+
 $("cropBox").addEventListener("mousedown", startDrag);
 $("cropBox").addEventListener("touchstart", startDrag, { passive: false });
 
 function startDrag(e) {
   e.preventDefault();
   const pos = getEventPos(e);
-  dragState = { type: "move", startX: pos.x, startY: pos.y, startBox: { ...cropBox } };
+  dragState = { startX: pos.x, startY: pos.y, startBox: { ...cropBox } };
 }
 
 document.addEventListener("mousemove", onDrag);
@@ -735,16 +796,13 @@ document.addEventListener("mouseup", endDrag);
 document.addEventListener("touchend", endDrag);
 
 function onDrag(e) {
-  if (!dragState) return;
+  if (!dragState || cropMode !== "crop") return;
   e.preventDefault();
   const pos = getEventPos(e);
   const dx = pos.x - dragState.startX;
   const dy = pos.y - dragState.startY;
-
-  if (dragState.type === "move") {
-    cropBox.x = dragState.startBox.x + dx;
-    cropBox.y = dragState.startBox.y + dy;
-  }
+  cropBox.x = dragState.startBox.x + dx;
+  cropBox.y = dragState.startBox.y + dy;
   drawCropOverlay();
 }
 
@@ -752,6 +810,7 @@ function endDrag() { dragState = null; }
 
 // 캔버스 클릭으로 크롭박스 이동
 $("cropCanvas").addEventListener("click", (e) => {
+  if (cropMode !== "crop") return;
   const pos = getEventPos(e);
   cropBox.x = pos.x - cropBox.w / 2;
   cropBox.y = pos.y - cropBox.h / 2;
@@ -760,11 +819,6 @@ $("cropCanvas").addEventListener("click", (e) => {
 
 $("cropConfirmBtn").onclick = () => {
   const outSize = 900;
-  const srcX = Math.round(cropBox.x / cropScale);
-  const srcY = Math.round(cropBox.y / cropScale);
-  const srcW = Math.round(cropBox.w / cropScale);
-  const srcH = Math.round(cropBox.h / cropScale);
-
   const out = document.createElement("canvas");
   out.width = outSize;
   out.height = outSize;
@@ -772,7 +826,25 @@ $("cropConfirmBtn").onclick = () => {
 
   const img = new Image();
   img.onload = () => {
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outSize, outSize);
+    if (cropMode === "fit") {
+      // 축소 맞춤: 흰 배경 + 비율 유지하며 중앙 배치
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, outSize, outSize);
+      const scale = Math.min(outSize / img.naturalWidth, outSize / img.naturalHeight);
+      const w = Math.round(img.naturalWidth * scale);
+      const h = Math.round(img.naturalHeight * scale);
+      const x = Math.round((outSize - w) / 2);
+      const y = Math.round((outSize - h) / 2);
+      ctx.drawImage(img, x, y, w, h);
+    } else {
+      // 자르기: 선택 영역만 잘라서 정사각형으로
+      const srcX = Math.round(cropBox.x / cropScale);
+      const srcY = Math.round(cropBox.y / cropScale);
+      const srcW = Math.round(cropBox.w / cropScale);
+      const srcH = Math.round(cropBox.h / cropScale);
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, outSize, outSize);
+    }
+
     const dataUrl = out.toDataURL("image/jpeg", 0.78);
     $("cropDialog").close();
     if (cropResolve) { cropResolve(dataUrl); cropResolve = null; }

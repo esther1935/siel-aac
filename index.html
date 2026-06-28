@@ -108,18 +108,30 @@
   <!-- 이미지 크롭 모달 -->
   <dialog id="cropDialog" style="padding:0;border:none;border-radius:12px;max-width:95vw;max-height:95vh;overflow:hidden;">
     <div style="background:#1a1a2e;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:300px;">
-      <h3 style="margin:0;color:#e0e0ff;text-align:center;">그림 자르기</h3>
+      <h3 style="margin:0;color:#e0e0ff;text-align:center;">그림 편집</h3>
+
+      <!-- 모드 선택 탭 -->
+      <div style="display:flex;gap:6px;background:#0d0d1a;border-radius:8px;padding:4px;">
+        <button id="modeCropBtn" type="button" style="flex:1;padding:8px;border:none;border-radius:6px;font-size:0.85rem;cursor:pointer;background:#a78bfa;color:#fff;">✂️ 자르기</button>
+        <button id="modeFitBtn" type="button" style="flex:1;padding:8px;border:none;border-radius:6px;font-size:0.85rem;cursor:pointer;background:transparent;color:#aaa;">🔍 축소 맞춤</button>
+      </div>
+
       <div style="position:relative;overflow:hidden;background:#000;border-radius:8px;touch-action:none;" id="cropContainer">
-        <canvas id="cropCanvas" style="display:block;max-width:100%;max-height:55vh;"></canvas>
+        <canvas id="cropCanvas" style="display:block;max-width:100%;max-height:50vh;"></canvas>
+        <!-- 자르기 모드 오버레이 -->
         <div id="cropOverlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;">
           <div id="cropBox" style="position:absolute;border:2px solid #a78bfa;box-shadow:0 0 0 9999px rgba(0,0,0,0.5);cursor:move;touch-action:none;"></div>
         </div>
+        <!-- 축소 맞춤 미리보기 캔버스 -->
+        <canvas id="fitPreviewCanvas" style="display:none;max-width:100%;max-height:50vh;"></canvas>
       </div>
+
+      <p id="cropHint" style="color:#aaa;font-size:0.8rem;text-align:center;margin:0;">박스를 드래그하거나 캔버스를 눌러 영역을 선택하세요</p>
+
       <div style="display:flex;gap:8px;justify-content:center;">
-        <button id="cropConfirmBtn" type="button" style="background:#a78bfa;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:1rem;cursor:pointer;">✂️ 자르기 완료</button>
+        <button id="cropConfirmBtn" type="button" style="background:#a78bfa;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:1rem;cursor:pointer;">✅ 완료</button>
         <button id="cropCancelBtn" type="button" style="background:#444;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:1rem;cursor:pointer;">취소</button>
       </div>
-      <p style="color:#aaa;font-size:0.8rem;text-align:center;margin:0;">박스를 드래그해서 자를 영역을 선택하세요</p>
     </div>
   </dialog>
 
