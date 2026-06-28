@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#fff7d6" />
   <title>시엘 AAC</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=sielAutoCategoryIcon20260628" />
-  <link rel="stylesheet" href="./styles.css?v=sielAutoCategoryIcon20260628" />
+  <link rel="manifest" href="./manifest.webmanifest?v=sielFinalCategoryFilter20260628" />
+  <link rel="stylesheet" href="./styles.css?v=sielFinalCategoryFilter20260628" />
 </head>
 <body>
   <div id="app">
@@ -51,7 +49,7 @@
           <button id="showBoardBtn" type="button">게시판</button>
         </div>
 
-        <button id="loginBtn" class="primary" type="button">확인</button>
+        <button id="loginBtn" class="primary hidden" type="button">관리 시작</button>
 
         <div id="adminPanel">
           <section id="uploadPanel">
@@ -63,11 +61,6 @@
                 <button id="addCategoryBtn" class="primary rightBtn" type="button">카테고리 추가</button>
               </div>
             </div>
-
-            <details class="categoryManager" open>
-              <summary>카테고리 이름·순서 관리</summary>
-              <div id="categoryManageList" class="categoryManageList"></div>
-            </details>
 
             <div class="adminRow imageAddRow">
               <label>그림 이름</label>
@@ -92,8 +85,6 @@
             <div id="boardView" class="boardView"></div>
           </section>
 
-          <div id="syncStatus" class="syncStatus">오프라인 저장 준비 중</div>
-
           <div class="backupRow">
             <button id="exportBtn" type="button">백업 다운로드</button>
             <label class="importLabel">백업 불러오기
@@ -105,6 +96,6 @@
     </dialog>
   </div>
 
-  <script type="module" src="./app.js?v=sielAutoCategoryIcon20260628"></script>
+  <script type="module" src="./app.js?v=sielFinalCategoryFilter20260628"></script>
 </body>
 </html>
