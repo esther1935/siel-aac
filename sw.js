@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielFinalKbTeacherFix20260628";
-const IMAGE_CACHE = "siel-aac-image-cache-kbteacherfix";
+const CACHE_NAME = "siel-aac-app-sielCategoryIconFix20260628";
+const IMAGE_CACHE = "siel-aac-image-cache-categoryiconfix";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielFinalKbTeacherFix20260628",
-  "./app.js?v=sielFinalKbTeacherFix20260628",
-  "./manifest.webmanifest?v=sielFinalKbTeacherFix20260628"
+  "./styles.css?v=sielCategoryIconFix20260628",
+  "./app.js?v=sielCategoryIconFix20260628",
+  "./manifest.webmanifest?v=sielCategoryIconFix20260628"
 ];
 
 self.addEventListener("install", (event) => {
