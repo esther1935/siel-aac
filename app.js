@@ -64,10 +64,6 @@ function loadData() {
     parsed.categories.forEach(cat => {
       if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
       if (!Array.isArray(cat.cards)) cat.cards = [];
-      cat.cards.forEach(card => {
-        card.speak = card.text || "";
-        if (!card.id) card.id = crypto.randomUUID();
-      });
     });
     return parsed;
   } catch {
@@ -81,7 +77,9 @@ function saveLocalOnly() {
 
 function normalizeSpeakValues() {
   data.categories.forEach(cat => {
+    if (!Array.isArray(cat.cards)) cat.cards = [];
     cat.cards.forEach(card => {
+      if (!card.id) card.id = crypto.randomUUID();
       card.speak = card.text || "";
     });
   });
@@ -108,7 +106,6 @@ function render() {
   renderCategoryBar();
   renderCards();
   renderAdmin();
-  updateSyncStatus();
 }
 
 function renderSentence() {
@@ -130,6 +127,7 @@ function renderSentence() {
     chip.className = "sentenceChip";
     chip.type = "button";
     chip.innerHTML = `
+      <div class="sentenceSpeak">${escapeHtml(card.text)}</div>
       <button class="removeChip" type="button" aria-label="삭제">×</button>
       <div class="sentenceImageBox">
         ${card.image ? `<img src="${card.image}" alt="">` : `<div class="noImage"></div>`}
@@ -297,7 +295,6 @@ function addRecent(card) {
   localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
 }
 
-
 function getCategoryById(id) {
   return data.categories.find(cat => cat.id === id);
 }
@@ -369,14 +366,21 @@ function renderCategoryManageList() {
 
       data.categories.splice(index, 1);
       if (selectedCategoryId === cat.id) selectedCategoryId = "all";
-      if ($("categorySelect") && $("categorySelect").value === cat.id) {
-        $("categorySelect").value = data.categories[0]?.id || "";
-      }
       saveData();
     };
 
     list.appendChild(row);
   });
+}
+
+function resetEditMode() {
+  editingCardId = "";
+  $("cardText").value = "";
+  $("cardSpeak").value = "";
+  $("imageInput").value = "";
+  $("addCardBtn").textContent = "그림 추가";
+  $("cancelEditBtn").classList.add("hidden");
+  $("editStatus").textContent = "새 그림 추가 모드입니다.";
 }
 
 function updateSyncStatus(text) {
@@ -397,28 +401,60 @@ function updateSyncStatus(text) {
   }
 }
 
+
+async function cacheImageUrl(url) {
+  if (!url || !("caches" in window)) return;
+  if (!/^https?:/.test(url)) return;
+
+  try {
+    const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+    const cached = await cache.match(url);
+    if (cached) return;
+
+    const response = await fetch(url, { mode: "cors", credentials: "omit" });
+    if (response && response.ok) {
+      await cache.put(url, response.clone());
+    }
+  } catch (e) {
+    try {
+      const cache = await caches.open(OFFLINE_IMAGE_CACHE);
+      const response = await fetch(url, { mode: "no-cors" });
+      if (response && (response.ok || response.type === "opaque")) {
+        await cache.put(url, response.clone());
+      }
+    } catch (err) {
+      console.warn("이미지 캐시 실패:", url, err);
+    }
+  }
+}
+
+function attachImageCacheOnLoad() {
+  document.querySelectorAll("img").forEach(img => {
+    const url = img.currentSrc || img.src;
+    if (!url || img.dataset.cacheAttached === "1") return;
+    img.dataset.cacheAttached = "1";
+
+    if (img.complete && img.naturalWidth > 0) {
+      cacheImageUrl(url);
+    } else {
+      img.addEventListener("load", () => cacheImageUrl(img.currentSrc || img.src), { once: true });
+    }
+  });
+}
+
 async function warmUpImageCache() {
   if (!("caches" in window)) return;
 
   try {
-    const cache = await caches.open(OFFLINE_IMAGE_CACHE);
     const urls = [];
     data.categories.forEach(cat => {
       cat.cards.forEach(card => {
-        if (card.image && /^https?:|^data:/.test(card.image)) urls.push(card.image);
+        if (card.image && /^https?:/.test(card.image)) urls.push(card.image);
       });
     });
 
-    await Promise.allSettled(
-      urls.slice(0, 500).map(async (url) => {
-        if (url.startsWith("data:")) return;
-        const cached = await cache.match(url);
-        if (!cached) {
-          const res = await fetch(url, { mode: "no-cors" });
-          await cache.put(url, res);
-        }
-      })
-    );
+    await Promise.allSettled(urls.slice(0, 700).map(url => cacheImageUrl(url)));
+    attachImageCacheOnLoad();
   } catch (e) {
     console.warn("이미지 오프라인 저장 실패:", e);
   }
@@ -431,7 +467,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=adminOfflineCategory20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielOfflineImageFix20260628");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -495,18 +531,10 @@ function renderAdmin() {
     });
   });
 
-  $("boardText").value = data.board || "";
-  $("boardView").textContent = data.board || "게시판 내용이 없습니다.";
-}
-
-function resetEditMode() {
-  editingCardId = "";
-  $("cardText").value = "";
-  $("cardSpeak").value = "";
-  $("imageInput").value = "";
-  $("addCardBtn").textContent = "그림 추가";
-  $("cancelEditBtn").classList.add("hidden");
-  $("editStatus").textContent = "새 그림 추가 모드입니다.";
+  if ($("boardText")) $("boardText").value = data.board || "";
+  if ($("boardView")) $("boardView").textContent = data.board || "게시판 내용이 없습니다.";
+  updateSyncStatus();
+  requestAnimationFrame(attachImageCacheOnLoad);
 }
 
 function escapeHtml(s) {
@@ -579,6 +607,10 @@ async function deleteImageFromStorageIfReady(card) {
   } catch (e) {
     console.warn("Storage 이미지 삭제 실패:", e);
   }
+}
+
+async function clearOldCachesOnce() {
+  // 오프라인 사용을 위해 기존 캐시 삭제를 중단합니다.
 }
 
 function openAdminTab(tab) {
@@ -773,7 +805,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=adminOfflineCategory20260628");
+    const configModule = await import("./firebase-config.js?v=sielOfflineImageFix20260628");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -806,10 +838,6 @@ async function initFirebase() {
         cloud.categories.forEach(cat => {
           if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
           if (!Array.isArray(cat.cards)) cat.cards = [];
-          cat.cards.forEach(card => {
-            card.speak = card.text || "";
-            if (!card.id) card.id = crypto.randomUUID();
-          });
         });
         data = cloud;
         saveLocalOnly();
@@ -842,6 +870,12 @@ async function uploadToCloudIfReady() {
   }
 }
 
+registerServiceWorker().finally(() => {
+  initFirebase();
+  render();
+  warmUpImageCache();
+});
+
 window.addEventListener("online", () => {
   updateSyncStatus("Wi-Fi 연결됨: 동기화 준비 중");
   initFirebase().then(() => uploadToCloudIfReady()).catch(console.warn);
@@ -849,10 +883,4 @@ window.addEventListener("online", () => {
 
 window.addEventListener("offline", () => {
   updateSyncStatus("오프라인 모드: 이 기기에 저장된 그림으로 사용할 수 있어요.");
-});
-
-registerServiceWorker().finally(() => {
-  initFirebase();
-  render();
-  warmUpImageCache();
 });
