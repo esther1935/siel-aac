@@ -28,18 +28,18 @@ button {
 
 /* 전체 화면 변수: 기기마다 자동 비율 */
 :root {
-  --top-h: clamp(52px, 8vh, 76px);
-  --search-h: clamp(42px, 6.2vh, 58px);
-  --cat-h: clamp(72px, 10vh, 92px);
+  --top-h: clamp(52px, 8svh, 76px);
+  --search-h: clamp(42px, 6.2svh, 58px);
+  --cat-h: clamp(72px, 10svh, 92px);
   --gap: clamp(5px, 1.1vh, 10px);
   --side-pad: clamp(8px, 1.7vw, 18px);
 
   --sentence-card-w: clamp(150px, 26vw, 300px);
-  --sentence-card-h: clamp(178px, 29vh, 310px);
-  --sentence-img-h: clamp(82px, 17vh, 190px);
+  --sentence-card-h: clamp(178px, 29svh, 310px);
+  --sentence-img-h: clamp(82px, 17svh, 190px);
 
   --choice-card-w: clamp(118px, 17vw, 180px);
-  --choice-card-h: clamp(148px, 23vh, 210px);
+  --choice-card-h: clamp(148px, 23svh, 210px);
   --choice-img-h: clamp(72px, 13.5vh, 128px);
 
   --select-gray: #A6A6A6;
@@ -301,16 +301,14 @@ button {
   border-radius: clamp(14px, 2.6vw, 20px);
   background: #fff;
   border: 2px solid #e4e4e4;
-  display: grid;
-  grid-template-rows:
-    0
-    minmax(0, 1fr)
-    clamp(38px, 6vh, 52px);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-items: center;
+  justify-content: flex-start;
   padding: clamp(5px, 1vh, 8px);
   overflow: hidden;
   box-shadow: 0 1px 8px rgba(0,0,0,.04);
+  gap: 0;
 }
 
 .card.selectedCard {
@@ -329,10 +327,11 @@ button {
 
 .cardImageBox {
   width: 100%;
-  height: 100%;
+  flex: 1 1 0;
   min-height: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
@@ -340,7 +339,8 @@ button {
 .cardImageBox .noImage {
   width: 100%;
   height: 100%;
-  max-height: var(--choice-img-h);
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
   object-position: center center;
   display: block;
@@ -352,6 +352,9 @@ button {
   line-height: 1.08;
   text-align: center;
   max-width: 100%;
+  flex: 0 0 auto;
+  width: 100%;
+  padding-top: 4px;
 }
 
 .cardsEmpty {
@@ -553,9 +556,9 @@ hr {
 @media (max-aspect-ratio: 3/4) {
   :root {
     --sentence-card-w: clamp(150px, 34vw, 230px);
-    --sentence-card-h: clamp(180px, 28vh, 270px);
+    --sentence-card-h: clamp(180px, 28svh, 270px);
     --choice-card-w: clamp(118px, 23vw, 160px);
-    --choice-card-h: clamp(148px, 21vh, 190px);
+    --choice-card-h: clamp(148px, 21svh, 190px);
   }
 
   .aacLayout {
@@ -578,9 +581,9 @@ hr {
     --search-h: 40px;
     --cat-h: 62px;
     --sentence-card-w: clamp(130px, 20vw, 230px);
-    --sentence-card-h: clamp(150px, 28vh, 230px);
+    --sentence-card-h: clamp(150px, 28svh, 230px);
     --choice-card-w: clamp(110px, 15vw, 160px);
-    --choice-card-h: clamp(120px, 22vh, 170px);
+    --choice-card-h: clamp(120px, 22svh, 170px);
   }
 
   .topbar h1 {
@@ -866,8 +869,8 @@ hr {
 /* Galaxy 미니탭 같은 낮은 가로형 화면에서만 보정: 휴대폰 비율은 건드리지 않음 */
 @media (orientation: landscape) and (max-height: 720px) {
   :root {
-    --choice-card-h: clamp(112px, 18vh, 150px);
-    --sentence-card-h: clamp(115px, 25vh, 175px);
+    --choice-card-h: clamp(112px, 18svh, 150px);
+    --sentence-card-h: clamp(115px, 25svh, 175px);
   }
 
   .aacLayout {
@@ -891,7 +894,7 @@ hr {
   }
 
   .card {
-    grid-template-rows: minmax(0, 4.9fr) minmax(22px, .8fr) !important;
+    flex-direction: column !important;
     padding: 6px !important;
   }
 
@@ -972,3 +975,20 @@ hr {
 
 /* SYNC OVERWRITE STATUS */
 .syncStatus{white-space:normal;}
+
+/* PWA 설치 앱(홈 추가)에서 vh 보정 */
+@media (display-mode: standalone) {
+  :root {
+    --choice-card-h: clamp(130px, 20svh, 190px);
+    --sentence-card-h: clamp(155px, 25svh, 270px);
+    --sentence-img-h: clamp(70px, 14svh, 160px);
+  }
+
+  .cardImageBox img,
+  .cardImageBox .noImage,
+  .sentenceImageBox img {
+    max-height: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+}
