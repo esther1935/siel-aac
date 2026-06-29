@@ -1097,16 +1097,21 @@ hr {
 .adminLoginLink {
   background: none;
   border: none;
-  color: #b8a000;
-  font-size: clamp(12px, 2.2vw, 14px);
-  font-weight: 600;
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 4px 6px;
   white-space: nowrap;
 }
 .adminLoginLink:hover {
-  background: #fff7d6;
+  color: #b8a000;
+}
+
+/* 선생님 전용 안내 텍스트 */
+#teacherPinArea p {
+  font-size: 11px !important;
+  color: #bbb !important;
 }
 
 /* 선생님용 그림추가 버튼 - 크고 중앙 */
@@ -1120,38 +1125,33 @@ hr {
   letter-spacing: 2px;
 }
 
-/* 관리자 탭 바 - 텍스트 링크 스타일 */
+/* 관리자 탭 바 - 중앙 텍스트만 */
 .adminTabBar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 8px 0 4px;
+  gap: 16px;
+  padding: 10px 0 6px;
   border: none;
-  border-radius: 0;
-  border-bottom: 2px solid #eadca4;
   margin-bottom: 8px;
 }
 .adminTab {
   flex: none;
-  padding: 6px 12px;
-  font-size: clamp(14px, 2.4vw, 17px);
-  font-weight: 700;
+  padding: 4px 8px;
+  font-size: clamp(13px, 2.2vw, 16px);
+  font-weight: 600;
   border: none;
   background: none;
   color: #aaa;
   cursor: pointer;
-  border-radius: 8px;
   transition: color 0.15s;
 }
 .adminTab.active {
   background: none;
   color: #b8a000;
-  border-bottom: 3px solid #f5c842;
-  border-radius: 0;
+  font-weight: 800;
 }
 .adminTabDivider {
-  color: #ccc;
-  font-size: 1.1rem;
-  font-weight: 300;
+  color: #ddd;
+  font-size: 1rem;
 }
