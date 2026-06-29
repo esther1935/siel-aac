@@ -1212,7 +1212,7 @@ $("menuBtn").onclick = () => {
   // 비밀번호 관리 다시 숨기기 (다음 로그인 전까지)
   const pinMgr = $("pinManager");
   if (pinMgr) pinMgr.style.display = "none";
-  // 기본: 선생님 화면으로 시작 (선생님 PIN 있을 때)
+  // 기본: 선생님 PIN 있으면 선생님 화면, 없으면 관리자 화면
   const tPins = getTeacherPins();
   if (tPins.length > 0) {
     $("pinArea").classList.add("hidden");
@@ -1222,6 +1222,9 @@ $("menuBtn").onclick = () => {
     $("pinArea").classList.remove("hidden");
     $("teacherPinArea").classList.add("hidden");
   }
+  // switchToAdminBtn: 항상 표시 (선생님 PIN 있을 때만 의미 있음)
+  const sBtn = $("switchToAdminBtn");
+  if (sBtn) sBtn.style.display = tPins.length > 0 ? "" : "none";
   $("adminDialog").showModal();
 };
 
@@ -1229,6 +1232,7 @@ $("menuBtn").onclick = () => {
 $("switchToAdminBtn") && ($("switchToAdminBtn").onclick = () => {
   $("teacherPinArea").classList.add("hidden");
   $("pinArea").classList.remove("hidden");
+  $("pinInput").focus();
 });
 
 function renderTeacherCategorySelect() {

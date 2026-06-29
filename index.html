@@ -43,10 +43,14 @@
     <dialog id="adminDialog">
       <div class="adminBox">
         <button class="close" type="button" onclick="document.getElementById('adminDialog').close()">×</button>
-        <h2>시엘 AAC 메뉴</h2>
+        <!-- 헤더: 타이틀 + 관리자로 로그인 -->
+        <div class="menuHeader">
+          <h2>시엘 AAC 메뉴</h2>
+          <button id="switchToAdminBtn" type="button" class="adminLoginLink">관리자로 로그인</button>
+        </div>
 
-        <!-- PIN 입력 영역 -->
-        <div id="pinArea">
+        <!-- PIN 입력 영역 (관리자용) -->
+        <div id="pinArea" class="hidden">
           <input id="pinInput" type="password" inputmode="numeric" placeholder="비밀번호 입력" />
           <button id="loginBtn" class="primary" type="button">확인</button>
         </div>
@@ -56,14 +60,15 @@
           <p style="font-size:0.9rem;color:#888;margin:4px 0 10px;">선생님 전용: 해당 카테고리 PIN 입력</p>
           <input id="teacherPinInput" type="password" inputmode="numeric" placeholder="선생님 비밀번호" />
           <select id="teacherCategorySelect"></select>
-          <button id="teacherLoginBtn" class="primary" type="button">✅ 입장하기</button>
-          <button id="switchToAdminBtn" type="button" style="font-size:0.8rem;color:#aaa;background:none;border:none;cursor:pointer;">관리자로 로그인</button>
+          <button id="teacherLoginBtn" class="primary teacherMainBtn" type="button">그림추가</button>
         </div>
 
+        <!-- 관리자 탭 (로그인 후) -->
         <div class="adminMenu hidden" id="adminMenu">
           <div class="adminTabBar">
-            <button id="showUploadBtn" class="adminTab active" type="button">🖼️ 그림 올리기</button>
-            <button id="showBoardBtn" class="adminTab" type="button">📋 게시판</button>
+            <button id="showUploadBtn" class="adminTab active" type="button">AAC그림관리</button>
+            <span class="adminTabDivider">|</span>
+            <button id="showBoardBtn" class="adminTab" type="button">게시판</button>
           </div>
         </div>
 
