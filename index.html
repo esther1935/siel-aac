@@ -41,8 +41,8 @@
     </main>
 
     <dialog id="adminDialog">
-      <form method="dialog" class="adminBox">
-        <button class="close">×</button>
+      <div class="adminBox">
+        <button class="close" type="button" onclick="document.getElementById('adminDialog').close()">×</button>
         <h2>시엘 AAC 메뉴</h2>
 
         <!-- PIN 입력 영역 -->
@@ -132,7 +132,7 @@
             </label>
           </div>
         </div>
-      </form>
+      </div>
     </dialog>
   </div>
 

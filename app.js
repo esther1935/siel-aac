@@ -609,11 +609,6 @@ async function registerServiceWorker() {
   }
 }
 
-function renderTeacherPinListOnLoad() {
-  // 관리자 패널 열릴 때 선생님 PIN 목록 렌더링
-  renderTeacherPinList && renderTeacherPinList();
-}
-
 function renderAdmin() {
   const select = $("categorySelect");
   if (!select) return;
@@ -1120,12 +1115,70 @@ $("showUploadBtn").onclick = () => openAdminTab("upload");
 $("showBoardBtn").onclick = () => openAdminTab("board");
 
 $("loginBtn").onclick = () => {
-  if ($("pinInput").value === ADMIN_PIN) {
+  if ($("pinInput").value === getAdminPin()) {
     $("adminPanel").classList.remove("hidden");
+    $("adminMenu").classList.remove("hidden");
+    const sel = $("categorySelect");
+    if (sel) sel.disabled = false;
+    renderTeacherPinList();
   } else {
-    alert("PIN이 달라요.");
+    alert("비밀번호가 맞지 않아요.");
+    $("pinInput").value = "";
+    $("pinInput").focus();
   }
 };
+
+// 관리자 비밀번호 변경
+$("changeAdminPinBtn") && ($("changeAdminPinBtn").onclick = () => {
+  const np = $("newAdminPin").value.trim();
+  const nc = $("newAdminPinConfirm").value.trim();
+  if (!np) { alert("새 비밀번호를 입력해 주세요."); return; }
+  if (np !== nc) { alert("비밀번호가 일치하지 않아요."); return; }
+  if (np.length < 4) { alert("4자리 이상으로 설정해 주세요."); return; }
+  localStorage.setItem(PIN_STORAGE_KEY, np);
+  $("newAdminPin").value = "";
+  $("newAdminPinConfirm").value = "";
+  alert("✅ 관리자 비밀번호가 변경됐어요!");
+});
+
+// 선생님 PIN 추가
+$("addTeacherPinBtn") && ($("addTeacherPinBtn").onclick = () => {
+  const catSel = $("categorySelect");
+  const catId = catSel ? catSel.value : "";
+  if (!catId) { alert("먼저 카테고리를 선택해 주세요."); return; }
+  const catName = data.categories.find(c => c.id === catId)?.name || "";
+  const pin = prompt(catName + " 카테고리의 선생님 비밀번호를 입력하세요 (숫자 4자리 이상)");
+  if (!pin || pin.trim().length < 4) { alert("4자리 이상 입력해 주세요."); return; }
+  const pins = getTeacherPins().filter(p => p.categoryId !== catId);
+  pins.push({ categoryId: catId, pin: pin.trim() });
+  saveTeacherPins(pins);
+  renderTeacherPinList();
+  alert("✅ 선생님 비밀번호가 저장됐어요!");
+});
+
+function renderTeacherPinList() {
+  const list = $("teacherPinList");
+  if (!list) return;
+  // 기존 항목 제거
+  list.querySelectorAll(".teacherPinItem").forEach(el => el.remove());
+  const pins = getTeacherPins();
+  if (pins.length === 0) return;
+  pins.forEach(p => {
+    const cat = data.categories.find(c => c.id === p.categoryId);
+    if (!cat) return;
+    const div = document.createElement("div");
+    div.className = "teacherPinItem";
+    div.style.cssText = "display:flex;align-items:center;gap:8px;font-size:0.9rem;padding:4px 0;";
+    div.innerHTML = '<span style="flex:1">' + cat.icon + ' ' + cat.name + ' — 비번 설정됨 ●●●●</span>' +
+      '<button type="button" style="background:#ff6b6b;color:#fff;border:none;border-radius:8px;padding:4px 10px;cursor:pointer;" data-cat="' + p.categoryId + '">삭제</button>';
+    div.querySelector("button").onclick = () => {
+      const newPins = getTeacherPins().filter(x => x.categoryId !== p.categoryId);
+      saveTeacherPins(newPins);
+      renderTeacherPinList();
+    };
+    list.appendChild(div);
+  });
+}
 
 $("addCategoryBtn").onclick = () => {
   const name = $("newCategory").value.trim();
