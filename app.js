@@ -19,6 +19,8 @@ const OFFLINE_IMAGE_CACHE = "siel-aac-image-cache-v3";
 let selectedCategoryId = "all";
 let sentenceCards = [];
 let reverseOrder = true; // 기본: 최신이 왼쪽 (시엘이 모드)
+let teacherMode = false;     // 선생님 모드 여부
+let teacherCatId = null;     // 선생님에게 허용된 카테고리 ID
 let searchTerm = "";
 let selectedCardId = "";
 let editingCardId = "";
@@ -614,19 +616,53 @@ function renderAdmin() {
   if (!select) return;
 
   select.innerHTML = "";
-  data.categories.forEach(cat => {
+
+  // 선생님 모드: 허용된 카테고리만 표시
+  const catsToShow = teacherMode && teacherCatId
+    ? data.categories.filter(c => c.id === teacherCatId)
+    : data.categories;
+
+  catsToShow.forEach(cat => {
     const option = document.createElement("option");
     option.value = cat.id;
     option.textContent = cat.name;
     select.appendChild(option);
   });
 
+  // 선생님 모드: 카테고리 추가/관리 숨김
+  const catManager = document.querySelector(".categoryManager");
+  const manageTitle = document.querySelector(".manageTitle");
+  const addCatRow = $("addCategoryBtn") ? $("addCategoryBtn").closest(".adminRow") : null;
+  if (teacherMode) {
+    if (catManager) catManager.style.display = "none";
+    if (manageTitle) manageTitle.style.display = "none";
+    if (addCatRow) addCatRow.style.display = "none";
+  } else {
+    if (catManager) catManager.style.display = "";
+    if (manageTitle) manageTitle.style.display = "";
+    if (addCatRow) addCatRow.style.display = "";
+  }
+
   renderCategoryManageList();
 
   const del = $("deleteList");
   del.innerHTML = "";
+  del.style.display = "";
 
-  data.categories.forEach(cat => {
+  // 선생님 모드: 해당 카테고리 그림만 표시
+  const catsForDelete = teacherMode && teacherCatId
+    ? data.categories.filter(c => c.id === teacherCatId)
+    : data.categories;
+
+  if (teacherMode) {
+    const teacherTitle = document.querySelector(".manageTitle");
+    if (teacherTitle) {
+      teacherTitle.style.display = "";
+      teacherTitle.textContent = "내가 올린 그림 수정 · 삭제";
+    }
+  }
+
+  catsForDelete.forEach(cat => {
     cat.cards.forEach(card => {
       const row = document.createElement("div");
       row.className = "deleteItem";
@@ -1056,15 +1092,11 @@ $("menuBtn").onclick = () => {
   $("pinInput").value = "";
   $("teacherPinInput") && ($("teacherPinInput").value = "");
 
-  // 선생님 모드에서 숨긴 요소들 복원
-  const catManager = document.querySelector(".categoryManager");
-  if (catManager) catManager.style.display = "";
-  const deleteList = $("deleteList");
-  if (deleteList) deleteList.style.display = "";
-  const manageTitle = document.querySelector(".manageTitle");
-  if (manageTitle) manageTitle.style.display = "";
-  const syncStatus = $("syncStatus");
-  if (syncStatus) syncStatus.style.display = "";
+  // 선생님 모드 초기화
+  teacherMode = false;
+  teacherCatId = null;
+  const syncStatus2 = $("syncStatus");
+  if (syncStatus2) syncStatus2.style.display = "";
   const guide = $("teacherGuide");
   if (guide) guide.remove();
   const catSel = $("categorySelect");
@@ -1114,32 +1146,35 @@ $("teacherLoginBtn") && ($("teacherLoginBtn").onclick = () => {
   if (match) {
     const cat = data.categories.find(c => c.id === catId);
 
+    // 선생님 모드 상태 설정
+    teacherMode = true;
+    teacherCatId = catId;
+
     // adminPanel 열기
     $("adminPanel").classList.remove("hidden");
+    $("adminMenu").classList.add("hidden");
     openAdminTab("upload");
 
-    // 카테고리 선택 고정
-    const sel = $("categorySelect");
-    if (sel) { sel.value = catId; sel.disabled = true; }
-
-    // 선생님 모드: 그림 추가 영역만 보이고 나머지 숨김
-    $("adminMenu").classList.add("hidden");         // 그림올리기/게시판 탭 숨김
-    const catManager = document.querySelector(".categoryManager"); // 카테고리 관리 숨김
-    if (catManager) catManager.style.display = "none";
-    const deleteList = $("deleteList");              // 기존 그림 수정/삭제 숨김
-    if (deleteList) deleteList.style.display = "none";
-    const manageTitle = document.querySelector(".manageTitle");
-    if (manageTitle) manageTitle.style.display = "none";
+    // syncStatus 숨김
     const syncStatus = $("syncStatus");
     if (syncStatus) syncStatus.style.display = "none";
 
-    // 안내 메시지 추가
+    // 안내 메시지
+    const old_guide = $("teacherGuide");
+    if (old_guide) old_guide.remove();
     const guide = document.createElement("p");
     guide.id = "teacherGuide";
-    guide.style.cssText = "color:#a78bfa;font-size:0.95rem;margin:8px 0;font-weight:700;";
+    guide.style.cssText = "color:#a78bfa;font-size:0.95rem;margin:8px 0;font-weight:700;text-align:center;";
     guide.textContent = (cat ? cat.icon + " " + cat.name : "") + " 카테고리에 그림을 추가할 수 있어요.";
     const imageRow = document.querySelector(".imageAddRow");
-    if (imageRow && !$("teacherGuide")) imageRow.parentNode.insertBefore(guide, imageRow);
+    if (imageRow) imageRow.parentNode.insertBefore(guide, imageRow);
+
+    // renderAdmin으로 카테고리/목록 제한 적용
+    renderAdmin();
+
+    // 카테고리 고정
+    const sel = $("categorySelect");
+    if (sel) { sel.value = catId; sel.disabled = true; }
 
     $("teacherPinArea").classList.add("hidden");
   } else {
