@@ -1186,6 +1186,11 @@ async function clearOldCachesOnce() {
 function openAdminTab(tab) {
   $("uploadPanel").classList.toggle("hidden", tab !== "upload");
   $("boardPanel").classList.toggle("hidden", tab !== "board");
+  // 탭 active 상태 업데이트
+  const uploadTab = $("showUploadBtn");
+  const boardTab = $("showBoardBtn");
+  if (uploadTab) uploadTab.classList.toggle("active", tab === "upload");
+  if (boardTab) boardTab.classList.toggle("active", tab === "board");
 }
 
 $("menuBtn").onclick = () => {

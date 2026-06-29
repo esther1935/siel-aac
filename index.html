@@ -56,13 +56,15 @@
           <p style="font-size:0.9rem;color:#888;margin:4px 0 10px;">선생님 전용: 해당 카테고리 PIN 입력</p>
           <input id="teacherPinInput" type="password" inputmode="numeric" placeholder="선생님 비밀번호" />
           <select id="teacherCategorySelect"></select>
-          <button id="teacherLoginBtn" class="primary" type="button">그림 추가</button>
+          <button id="teacherLoginBtn" class="primary" type="button">✅ 입장하기</button>
           <button id="switchToAdminBtn" type="button" style="font-size:0.8rem;color:#aaa;background:none;border:none;cursor:pointer;">관리자로 로그인</button>
         </div>
 
         <div class="adminMenu hidden" id="adminMenu">
-          <button id="showUploadBtn" class="primary" type="button">그림 올리기</button>
-          <button id="showBoardBtn" type="button">게시판</button>
+          <div class="adminTabBar">
+            <button id="showUploadBtn" class="adminTab active" type="button">🖼️ 그림 올리기</button>
+            <button id="showBoardBtn" class="adminTab" type="button">📋 게시판</button>
+          </div>
         </div>
 
         <div id="adminPanel" class="hidden">
