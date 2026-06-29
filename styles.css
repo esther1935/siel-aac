@@ -568,28 +568,30 @@ hr {
   .aacLayout {
     grid-template-rows:
       var(--search-h)
-      minmax(180px, 35fr)
-      minmax(160px, 32fr)
-      minmax(80px, auto);
+      minmax(200px, 42fr)
+      minmax(170px, 34fr)
+      minmax(80px, 24fr);
     overflow: hidden;
   }
 
   .categoryBar {
     height: auto !important;
-    max-height: 38svh;
+    max-height: 24svh;
     flex-wrap: wrap;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     align-content: flex-start;
-    padding: clamp(6px, 1vh, 10px) 6px;
-    gap: clamp(6px, 1.5vw, 10px);
+    justify-content: center;
+    padding: clamp(5px, 1vh, 8px) 6px;
+    gap: clamp(5px, 1.2vw, 8px);
     border-radius: 18px 18px 0 0;
   }
 
   .catTab {
-    flex: 0 0 clamp(76px, 27vw, 110px);
-    height: clamp(56px, 10svh, 80px) !important;
-    min-height: 52px;
+    flex: 0 0 clamp(70px, 27vw, 105px);
+    height: clamp(52px, 8svh, 70px) !important;
+    min-height: 48px;
+    font-size: clamp(13px, 2.8vw, 17px) !important;
   }
 
   .sentencePanel {
@@ -1019,20 +1021,35 @@ hr {
   }
 }
 
-/* Z Fold 세로 모드 보정 (좁고 긴 화면) */
+/* Z Fold 접은 상태 / 좁은 세로 화면 보정 */
 @media (max-width: 400px) {
   :root {
-    --choice-card-w: clamp(100px, 28vw, 140px);
-    --choice-card-h: clamp(120px, 20svh, 170px);
-    --sentence-card-w: clamp(110px, 30vw, 160px);
-    --sentence-card-h: clamp(140px, 22svh, 200px);
+    --choice-card-w: clamp(95px, 27vw, 130px);
+    --choice-card-h: clamp(110px, 18svh, 155px);
+    --sentence-card-w: clamp(120px, 40vw, 175px);
+    --sentence-card-h: clamp(160px, 28svh, 230px);
+  }
+
+  /* 문장 카드 패널이 더 많은 공간 차지 */
+  .aacLayout {
+    grid-template-rows:
+      var(--search-h)
+      minmax(170px, 46fr)
+      minmax(130px, 28fr)
+      minmax(70px, 26fr) !important;
   }
 
   .card .label {
-    font-size: clamp(14px, 3.5vw, 20px) !important;
+    font-size: clamp(13px, 3.5vw, 18px) !important;
   }
 
   .sentenceLabel {
-    font-size: clamp(18px, 4.5vw, 28px) !important;
+    font-size: clamp(20px, 5.5vw, 30px) !important;
+  }
+
+  .catTab {
+    flex: 0 0 clamp(80px, 29vw, 110px) !important;
+    height: clamp(48px, 7svh, 64px) !important;
+    font-size: clamp(12px, 3vw, 16px) !important;
   }
 }
