@@ -35,7 +35,7 @@ const categoryIcons = {
   "늘봄": "🌱",
   "기관": "🏢",
   "치료기관": "🏢",
-  "치료실": "💬",
+  "치료실": "🌱",
   "병원": "🏥",
   "감정": "😊",
   "음식": "🍊",
@@ -51,7 +51,7 @@ const defaultData = {
   categories: [
     { id: crypto.randomUUID(), name: "학교", icon: "🏫", cards: [] },
     { id: crypto.randomUUID(), name: "집", icon: "🏠", cards: [] },
-    { id: crypto.randomUUID(), name: "치료실", icon: "💬", cards: [] },
+    { id: crypto.randomUUID(), name: "치료실", icon: "🌱", cards: [] },
     { id: crypto.randomUUID(), name: "감정", icon: "😊", cards: [
       { id: crypto.randomUUID(), text: "쉬고 싶어요", speak: "쉬고 싶어요", image: "" },
       { id: crypto.randomUUID(), text: "도와주세요", speak: "도와주세요", image: "" },
@@ -1055,6 +1055,20 @@ $("menuBtn").onclick = () => {
   $("adminMenu") && $("adminMenu").classList.add("hidden");
   $("pinInput").value = "";
   $("teacherPinInput") && ($("teacherPinInput").value = "");
+
+  // 선생님 모드에서 숨긴 요소들 복원
+  const catManager = document.querySelector(".categoryManager");
+  if (catManager) catManager.style.display = "";
+  const deleteList = $("deleteList");
+  if (deleteList) deleteList.style.display = "";
+  const manageTitle = document.querySelector(".manageTitle");
+  if (manageTitle) manageTitle.style.display = "";
+  const syncStatus = $("syncStatus");
+  if (syncStatus) syncStatus.style.display = "";
+  const guide = $("teacherGuide");
+  if (guide) guide.remove();
+  const catSel = $("categorySelect");
+  if (catSel) catSel.disabled = false;
   // 기본: 선생님 화면으로 시작 (선생님 PIN 있을 때)
   const tPins = getTeacherPins();
   if (tPins.length > 0) {
@@ -1098,16 +1112,40 @@ $("teacherLoginBtn") && ($("teacherLoginBtn").onclick = () => {
   const tPins = getTeacherPins();
   const match = tPins.find(p => p.pin === pin && p.categoryId === catId);
   if (match) {
-    // 해당 카테고리만 선택된 채로 업로드 패널 열기
+    const cat = data.categories.find(c => c.id === catId);
+
+    // adminPanel 열기
     $("adminPanel").classList.remove("hidden");
-    $("adminMenu").classList.remove("hidden");
     openAdminTab("upload");
-    // 카테고리 고정
+
+    // 카테고리 선택 고정
     const sel = $("categorySelect");
     if (sel) { sel.value = catId; sel.disabled = true; }
+
+    // 선생님 모드: 그림 추가 영역만 보이고 나머지 숨김
+    $("adminMenu").classList.add("hidden");         // 그림올리기/게시판 탭 숨김
+    const catManager = document.querySelector(".categoryManager"); // 카테고리 관리 숨김
+    if (catManager) catManager.style.display = "none";
+    const deleteList = $("deleteList");              // 기존 그림 수정/삭제 숨김
+    if (deleteList) deleteList.style.display = "none";
+    const manageTitle = document.querySelector(".manageTitle");
+    if (manageTitle) manageTitle.style.display = "none";
+    const syncStatus = $("syncStatus");
+    if (syncStatus) syncStatus.style.display = "none";
+
+    // 안내 메시지 추가
+    const guide = document.createElement("p");
+    guide.id = "teacherGuide";
+    guide.style.cssText = "color:#a78bfa;font-size:0.95rem;margin:8px 0;font-weight:700;";
+    guide.textContent = (cat ? cat.icon + " " + cat.name : "") + " 카테고리에 그림을 추가할 수 있어요.";
+    const imageRow = document.querySelector(".imageAddRow");
+    if (imageRow && !$("teacherGuide")) imageRow.parentNode.insertBefore(guide, imageRow);
+
     $("teacherPinArea").classList.add("hidden");
   } else {
     alert("비밀번호가 맞지 않아요.");
+    $("teacherPinInput").value = "";
+    $("teacherPinInput").focus();
   }
 });
 $("cancelEditBtn").onclick = () => resetEditMode();
