@@ -217,14 +217,13 @@ button {
 }
 
 .sentenceSpeak {
-  font-size: clamp(13px, 2.2vw, 18px);
-  font-weight: 800;
-  white-space: nowrap;
-  max-width: 80%;
+  /* cardSpeak처럼 숨김 - 공간 차지하지 않도록 */
+  position: absolute;
+  width: 1px;
+  height: 1px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 0 0 auto;
-  width: 100%;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sentenceImageBox {
