@@ -732,16 +732,19 @@ function renderAdmin() {
     select.appendChild(option);
   });
 
-  // 선생님 모드: 카테고리 추가/관리 숨김
-  const catManager = document.querySelector(".categoryManager");
+  // 선생님 모드: 카테고리 추가/관리, 비밀번호 관리 숨김
+  const catManager = document.querySelector(".categoryManager:not(#pinManager)");
+  const pinManager = $("pinManager");
   const manageTitle = document.querySelector(".manageTitle");
   const addCatRow = $("addCategoryBtn") ? $("addCategoryBtn").closest(".adminRow") : null;
   if (teacherMode) {
     if (catManager) catManager.style.display = "none";
+    if (pinManager) pinManager.style.display = "none";
     if (manageTitle) manageTitle.style.display = "none";
     if (addCatRow) addCatRow.style.display = "none";
   } else {
     if (catManager) catManager.style.display = "";
+    if (pinManager) pinManager.style.display = "";
     if (manageTitle) manageTitle.style.display = "";
     if (addCatRow) addCatRow.style.display = "";
   }
