@@ -5,6 +5,7 @@ const OFFLINE_IMAGE_CACHE = "siel-aac-image-cache-v3";
 
 let selectedCategoryId = "all";
 let sentenceCards = [];
+let reverseOrder = true; // 기본: 최신이 왼쪽 (시엘이 모드)
 let searchTerm = "";
 let selectedCardId = "";
 let editingCardId = "";
@@ -143,7 +144,9 @@ function renderSentence() {
     area.appendChild(chip);
   });
 
-  sentenceText.textContent = sentenceCards.map(c => c.speak || c.text).join(" ");
+  // 텍스트는 항상 시간순(오래된→최신) 으로 표시
+  const displayCards = reverseOrder ? [...sentenceCards].reverse() : sentenceCards;
+  sentenceText.textContent = displayCards.map(c => c.speak || c.text).join(" ");
 }
 
 function renderCategoryBar() {
@@ -272,12 +275,12 @@ function updateDots() {
 }
 
 function addToSentence(card) {
-  sentenceCards.push({
-    id: card.id,
-    text: card.text,
-    speak: card.text,
-    image: card.image || ""
-  });
+  const entry = { id: card.id, text: card.text, speak: card.text, image: card.image || "" };
+  if (reverseOrder) {
+    sentenceCards.unshift(entry); // 최신이 왼쪽 (시엘이 모드)
+  } else {
+    sentenceCards.push(entry);    // 최신이 오른쪽 (한글 학습 모드)
+  }
   addRecent(card);
   renderSentence();
   speak(card.text);
@@ -1140,6 +1143,23 @@ $("addCardBtn").onclick = async () => {
 $("saveBoardBtn").onclick = () => {
   data.board = $("boardText").value.trim();
   saveData();
+};
+
+$("reverseOrderBtn").onclick = () => {
+  reverseOrder = !reverseOrder;
+  const btn = $("reverseOrderBtn");
+  if (reverseOrder) {
+    btn.style.background = "#a78bfa";
+    btn.style.color = "#fff";
+    btn.title = "현재: 최신 그림이 왼쪽 (시엘이 모드)";
+  } else {
+    btn.style.background = "#e0e0e0";
+    btn.style.color = "#555";
+    btn.title = "현재: 최신 그림이 오른쪽 (한글 학습 모드)";
+  }
+  // 기존 카드 순서도 뒤집기
+  sentenceCards.reverse();
+  renderSentence();
 };
 
 $("clearSentenceBtn").onclick = () => {

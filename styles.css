@@ -143,6 +143,23 @@ button {
     clamp(38px, 6vh, 50px);
 }
 
+.reverseOrderBtn {
+  position: absolute;
+  top: clamp(6px, 1.2vh, 12px);
+  left: clamp(8px, 1.5vw, 16px);
+  background: #a78bfa;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: clamp(14px, 2.2vw, 18px);
+  font-weight: 700;
+  cursor: pointer;
+  z-index: 2;
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
 .clearSentenceBtn {
   position: absolute;
   top: clamp(10px, 2vh, 18px);
