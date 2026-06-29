@@ -561,14 +561,35 @@ hr {
     --sentence-card-h: clamp(180px, 28svh, 270px);
     --choice-card-w: clamp(118px, 23vw, 160px);
     --choice-card-h: clamp(148px, 21svh, 190px);
+    --cat-h: auto;
   }
 
+  /* 세로 모드: 카테고리를 wrap해서 아래 스크롤 */
   .aacLayout {
     grid-template-rows:
       var(--search-h)
-      minmax(210px, 38fr)
-      minmax(180px, 38fr)
-      var(--cat-h);
+      minmax(180px, 35fr)
+      minmax(160px, 32fr)
+      minmax(80px, auto);
+    overflow: hidden;
+  }
+
+  .categoryBar {
+    height: auto !important;
+    max-height: 38svh;
+    flex-wrap: wrap;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    align-content: flex-start;
+    padding: clamp(6px, 1vh, 10px) 6px;
+    gap: clamp(6px, 1.5vw, 10px);
+    border-radius: 18px 18px 0 0;
+  }
+
+  .catTab {
+    flex: 0 0 clamp(76px, 27vw, 110px);
+    height: clamp(56px, 10svh, 80px) !important;
+    min-height: 52px;
   }
 
   .sentencePanel {
