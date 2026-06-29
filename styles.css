@@ -499,9 +499,9 @@ dialog::backdrop {
 }
 
 .adminMenu {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .primary {
@@ -715,17 +715,10 @@ hr {
 }
 
 .adminMenu {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 8px !important;
-  margin: 12px 0 22px;
-}
-
-.adminMenu button {
-  height: 48px;
-  border-radius: 14px !important;
-  font-size: 20px !important;
-  font-weight: 900;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin: 8px 0 16px;
 }
 
 .adminRow {
@@ -1130,21 +1123,23 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   padding: 10px 0 6px;
   border: none;
   margin-bottom: 8px;
+  width: 100%;
 }
 .adminTab {
   flex: none;
-  padding: 4px 8px;
-  font-size: clamp(13px, 2.2vw, 16px);
+  padding: 4px 6px;
+  font-size: clamp(12px, 3vw, 15px);
   font-weight: 600;
   border: none;
   background: none;
   color: #aaa;
   cursor: pointer;
   transition: color 0.15s;
+  white-space: nowrap;
 }
 .adminTab.active {
   background: none;
@@ -1154,4 +1149,5 @@ hr {
 .adminTabDivider {
   color: #ddd;
   font-size: 1rem;
+  flex-shrink: 0;
 }
