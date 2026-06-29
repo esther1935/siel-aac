@@ -732,19 +732,16 @@ function renderAdmin() {
     select.appendChild(option);
   });
 
-  // 선생님 모드: 카테고리 추가/관리, 비밀번호 관리 숨김
+  // 선생님 모드: 카테고리 추가/관리 숨김 (pinManager는 로그인 버튼에서만 제어)
   const catManager = document.querySelector(".categoryManager:not(#pinManager)");
-  const pinManager = $("pinManager");
   const manageTitle = document.querySelector(".manageTitle");
   const addCatRow = $("addCategoryBtn") ? $("addCategoryBtn").closest(".adminRow") : null;
   if (teacherMode) {
     if (catManager) catManager.style.display = "none";
-    if (pinManager) pinManager.style.display = "none";
     if (manageTitle) manageTitle.style.display = "none";
     if (addCatRow) addCatRow.style.display = "none";
   } else {
     if (catManager) catManager.style.display = "";
-    if (pinManager) pinManager.style.display = "";
     if (manageTitle) manageTitle.style.display = "";
     if (addCatRow) addCatRow.style.display = "";
   }
@@ -1207,6 +1204,9 @@ $("menuBtn").onclick = () => {
   if (guide) guide.remove();
   const catSel = $("categorySelect");
   if (catSel) catSel.disabled = false;
+  // 비밀번호 관리 다시 숨기기 (다음 로그인 전까지)
+  const pinMgr = $("pinManager");
+  if (pinMgr) pinMgr.style.display = "none";
   // 기본: 선생님 화면으로 시작 (선생님 PIN 있을 때)
   const tPins = getTeacherPins();
   if (tPins.length > 0) {
@@ -1295,10 +1295,29 @@ $("showBoardBtn").onclick = () => openAdminTab("board");
 
 $("loginBtn").onclick = () => {
   if ($("pinInput").value === getAdminPin()) {
+    // 선생님 모드 초기화
+    teacherMode = false;
+    teacherCatId = null;
+
     $("adminPanel").classList.remove("hidden");
     $("adminMenu").classList.remove("hidden");
+
+    // 관리자 전용: 비밀번호 관리 보이게
+    const pinManager = $("pinManager");
+    if (pinManager) pinManager.style.display = "";
+
+    // syncStatus 복원
+    const syncStatus = $("syncStatus");
+    if (syncStatus) syncStatus.style.display = "";
+
+    // 안내 메시지 제거
+    const guide = $("teacherGuide");
+    if (guide) guide.remove();
+
     const sel = $("categorySelect");
     if (sel) sel.disabled = false;
+
+    renderAdmin();
     renderTeacherPinList();
   } else {
     alert("비밀번호가 맞지 않아요.");
