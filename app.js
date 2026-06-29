@@ -1149,12 +1149,10 @@ $("reverseOrderBtn").onclick = () => {
   reverseOrder = !reverseOrder;
   const btn = $("reverseOrderBtn");
   if (reverseOrder) {
-    btn.style.background = "#a78bfa";
-    btn.style.color = "#fff";
+    btn.classList.remove("active");
     btn.title = "현재: 최신 그림이 왼쪽 (시엘이 모드)";
   } else {
-    btn.style.background = "#e0e0e0";
-    btn.style.color = "#555";
+    btn.classList.add("active");
     btn.title = "현재: 최신 그림이 오른쪽 (한글 학습 모드)";
   }
   // 기존 카드 순서도 뒤집기
