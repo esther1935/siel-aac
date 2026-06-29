@@ -2,6 +2,8 @@
 const PIN_STORAGE_KEY = "siel_admin_pin";
 const TEACHER_PINS_KEY = "siel_teacher_pins";
 
+// PIN은 Firebase에 저장해서 모든 기기 공유
+// 로컬은 캐시용으로만 사용
 function getAdminPin() {
   return localStorage.getItem(PIN_STORAGE_KEY) || "1208";
 }
@@ -11,6 +13,34 @@ function getTeacherPins() {
 }
 function saveTeacherPins(pins) {
   localStorage.setItem(TEACHER_PINS_KEY, JSON.stringify(pins));
+  uploadPinsToCloud();
+}
+function saveAdminPin(pin) {
+  localStorage.setItem(PIN_STORAGE_KEY, pin);
+  uploadPinsToCloud();
+}
+async function uploadPinsToCloud() {
+  if (!firebaseReady || !db) return;
+  try {
+    const { doc, setDoc } = firebaseReady;
+    await setDoc(doc(db, "aac", "pins"), {
+      adminPin: getAdminPin(),
+      teacherPins: getTeacherPins(),
+      updatedAt: Date.now()
+    });
+  } catch(e) { console.warn("PIN 클라우드 저장 실패:", e); }
+}
+async function loadPinsFromCloud() {
+  if (!firebaseReady || !db) return;
+  try {
+    const { doc, getDoc } = firebaseReady;
+    const snap = await getDoc(doc(db, "aac", "pins"));
+    if (snap.exists()) {
+      const d = snap.data();
+      if (d.adminPin) localStorage.setItem(PIN_STORAGE_KEY, d.adminPin);
+      if (d.teacherPins) localStorage.setItem(TEACHER_PINS_KEY, JSON.stringify(d.teacherPins));
+    }
+  } catch(e) { console.warn("PIN 클라우드 불러오기 실패:", e); }
 }
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
@@ -337,18 +367,24 @@ function showEmojiPicker(cat, anchorBtn) {
   const popup = document.createElement("div");
   popup.id = "emojiPickerPopup";
   popup.style.cssText = `
-    position:fixed; z-index:9999;
+    position:absolute; z-index:99999;
     background:#fff; border:2px solid #f5c842;
     border-radius:16px; padding:12px;
-    display:grid; grid-template-columns:repeat(8,1fr);
-    gap:6px; max-width:320px; max-height:260px;
-    overflow-y:auto; box-shadow:0 4px 24px rgba(0,0,0,0.18);
+    display:grid; grid-template-columns:repeat(7,1fr);
+    gap:6px; width:290px; max-height:220px;
+    overflow-y:auto; box-shadow:0 4px 24px rgba(0,0,0,0.25);
   `;
 
-  // 위치 계산
-  const rect = anchorBtn.getBoundingClientRect();
-  popup.style.top = (rect.bottom + 8) + "px";
-  popup.style.left = Math.min(rect.left, window.innerWidth - 340) + "px";
+  // 다이얼로그 안에 추가 (z-index 문제 해결)
+  const dialog = document.getElementById("adminDialog");
+  const anchor = dialog || document.body;
+  anchor.style.position = anchor.style.position || "relative";
+
+  // 위치: 버튼 기준
+  const btnRect = anchorBtn.getBoundingClientRect();
+  const anchorRect = anchor.getBoundingClientRect();
+  popup.style.top = (btnRect.bottom - anchorRect.top + anchor.scrollTop + 4) + "px";
+  popup.style.left = Math.max(0, Math.min(btnRect.left - anchorRect.left, anchorRect.width - 300)) + "px";
 
   emojiList.forEach(em => {
     const btn = document.createElement("button");
@@ -366,7 +402,7 @@ function showEmojiPicker(cat, anchorBtn) {
     popup.appendChild(btn);
   });
 
-  document.body.appendChild(popup);
+  anchor.appendChild(popup);
 
   // 바깥 클릭 시 닫기
   setTimeout(() => {
@@ -1275,7 +1311,7 @@ $("changeAdminPinBtn") && ($("changeAdminPinBtn").onclick = () => {
   if (!np) { alert("새 비밀번호를 입력해 주세요."); return; }
   if (np !== nc) { alert("비밀번호가 일치하지 않아요."); return; }
   if (np.length < 4) { alert("4자리 이상으로 설정해 주세요."); return; }
-  localStorage.setItem(PIN_STORAGE_KEY, np);
+  saveAdminPin(np);
   $("newAdminPin").value = "";
   $("newAdminPinConfirm").value = "";
   alert("✅ 관리자 비밀번호가 변경됐어요!");
@@ -1517,7 +1553,7 @@ async function initFirebase() {
   try {
     const configModule = await import("./firebase-config.js?v=sielPinUpdate20260629");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
-    const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const { getFirestore, doc, setDoc, getDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
 
     const app = initializeApp(configModule.firebaseConfig);
@@ -1526,6 +1562,7 @@ async function initFirebase() {
     firebaseReady = {
       doc,
       setDoc,
+      getDoc,
       onSnapshot,
       getStorage,
       storageRef,
@@ -1533,6 +1570,9 @@ async function initFirebase() {
       getDownloadURL,
       deleteObject
     };
+
+    // PIN 클라우드에서 불러오기
+    await loadPinsFromCloud();
 
     const ref = doc(db, "aac", "siel");
 
