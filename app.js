@@ -317,6 +317,68 @@ function getCategoryById(id) {
   return data.categories.find(cat => cat.id === id);
 }
 
+
+// 자주 쓰는 이모지 목록
+const emojiList = [
+  "🏠","🏫","🌱","🏥","⛪","🚗","🍊","🍎","🍕","🍜","🍰",
+  "🎮","🎨","🎵","🎪","🎠","🧸","🪆","📚","✏️","🖍️",
+  "😊","😄","😢","😡","😴","🤒","🥳","😮","🥰","😎",
+  "👨‍👩‍👦","👩","👨","👧","👦","👴","👵","🐶","🐱","🐻",
+  "⚽","🏊","🚴","🌈","🌟","❤️","💛","💙","💜","🔴",
+  "🏢","🏪","🛒","🌳","🌸","🌺","🌻","🍀","🌿","🍁",
+  "🚌","✈️","🚂","🚲","🛺","🏖️","🏕️","🌄","🎡","🎢"
+];
+
+function showEmojiPicker(cat, anchorBtn) {
+  // 기존 팝업 제거
+  const old = document.getElementById("emojiPickerPopup");
+  if (old) { old.remove(); return; }
+
+  const popup = document.createElement("div");
+  popup.id = "emojiPickerPopup";
+  popup.style.cssText = `
+    position:fixed; z-index:9999;
+    background:#fff; border:2px solid #f5c842;
+    border-radius:16px; padding:12px;
+    display:grid; grid-template-columns:repeat(8,1fr);
+    gap:6px; max-width:320px; max-height:260px;
+    overflow-y:auto; box-shadow:0 4px 24px rgba(0,0,0,0.18);
+  `;
+
+  // 위치 계산
+  const rect = anchorBtn.getBoundingClientRect();
+  popup.style.top = (rect.bottom + 8) + "px";
+  popup.style.left = Math.min(rect.left, window.innerWidth - 340) + "px";
+
+  emojiList.forEach(em => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = em;
+    btn.style.cssText = "font-size:1.6rem;background:none;border:none;cursor:pointer;padding:2px;border-radius:6px;";
+    btn.onmouseover = () => btn.style.background = "#fff7d6";
+    btn.onmouseout = () => btn.style.background = "none";
+    btn.onclick = () => {
+      cat.icon = em;
+      anchorBtn.textContent = em;
+      saveData();
+      popup.remove();
+    };
+    popup.appendChild(btn);
+  });
+
+  document.body.appendChild(popup);
+
+  // 바깥 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener("click", function closePopup(e) {
+      if (!popup.contains(e.target) && e.target !== anchorBtn) {
+        popup.remove();
+        document.removeEventListener("click", closePopup);
+      }
+    });
+  }, 100);
+}
+
 function renderCategoryManageList() {
   const list = $("categoryManageList");
   if (!list) return;
@@ -330,7 +392,7 @@ function renderCategoryManageList() {
     const count = Array.isArray(cat.cards) ? cat.cards.length : 0;
 
     row.innerHTML = `
-      <div class="catManageIcon">${escapeHtml(icon)}</div>
+      <button class="catIconBtn" type="button" title="아이콘 바꾸기">${escapeHtml(icon)}</button>
       <input class="catRenameInput" value="${escapeHtml(cat.name)}" aria-label="카테고리 이름" />
       <span class="catCardCount">${count}개</span>
       <button class="catUpBtn" type="button" ${index === 0 ? "disabled" : ""}>⬆️</button>
@@ -338,6 +400,11 @@ function renderCategoryManageList() {
       <button class="catRenameBtn" type="button">이름 저장</button>
       <button class="catDeleteBtn" type="button">삭제</button>
     `;
+
+    // 아이콘 버튼 클릭 → 이모지 선택 팝업
+    row.querySelector(".catIconBtn").onclick = () => {
+      showEmojiPicker(cat, row.querySelector(".catIconBtn"));
+    };
 
     const input = row.querySelector(".catRenameInput");
 
