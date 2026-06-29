@@ -7,8 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#fff7d6" />
   <title>시엘 AAC</title>
-  <link rel="manifest" href="./manifest.webmanifest?v=sielSyncOverwrite20260628" />
-  <link rel="stylesheet" href="./styles.css?v=sielSyncOverwrite20260628" />
+  <link rel="manifest" href="./manifest.webmanifest?v=sielPinUpdate20260629" />
+  <link rel="stylesheet" href="./styles.css?v=sielPinUpdate20260629" />
 </head>
 <body>
   <div id="app">
@@ -45,14 +45,25 @@
         <button class="close">×</button>
         <h2>시엘 AAC 메뉴</h2>
 
-        <input id="pinInput" type="password" inputmode="numeric" placeholder="관리비번" />
+        <!-- PIN 입력 영역 -->
+        <div id="pinArea">
+          <input id="pinInput" type="password" inputmode="numeric" placeholder="비밀번호 입력" />
+          <button id="loginBtn" class="primary" type="button">확인</button>
+        </div>
 
-        <div class="adminMenu">
+        <!-- 카테고리별 PIN 로그인 (선생님용) -->
+        <div id="teacherPinArea" class="hidden">
+          <p style="font-size:0.9rem;color:#888;margin:4px 0 10px;">선생님 전용: 해당 카테고리 PIN 입력</p>
+          <input id="teacherPinInput" type="password" inputmode="numeric" placeholder="선생님 비밀번호" />
+          <select id="teacherCategorySelect"></select>
+          <button id="teacherLoginBtn" class="primary" type="button">그림 추가</button>
+          <button id="switchToAdminBtn" type="button" style="font-size:0.8rem;color:#aaa;background:none;border:none;cursor:pointer;">관리자로 로그인</button>
+        </div>
+
+        <div class="adminMenu hidden" id="adminMenu">
           <button id="showUploadBtn" class="primary" type="button">그림 올리기</button>
           <button id="showBoardBtn" type="button">게시판</button>
         </div>
-
-        <button id="loginBtn" class="primary" type="button">관리 시작</button>
 
         <div id="adminPanel" class="hidden">
           <section id="uploadPanel">
@@ -95,6 +106,25 @@
 
           <div id="syncStatus" class="syncStatus">오프라인 저장 준비 중</div>
 
+          <!-- 비밀번호 관리 -->
+          <details class="categoryManager">
+            <summary>🔐 비밀번호 관리</summary>
+            <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+              <div class="adminRow">
+                <label>관리자 비번 변경</label>
+                <div class="adminFieldGroup">
+                  <input id="newAdminPin" type="password" inputmode="numeric" placeholder="새 비밀번호 (숫자)" style="max-width:160px;"/>
+                  <input id="newAdminPinConfirm" type="password" inputmode="numeric" placeholder="다시 입력" style="max-width:160px;"/>
+                  <button id="changeAdminPinBtn" class="primary rightBtn" type="button">변경</button>
+                </div>
+              </div>
+              <div id="teacherPinList" style="display:flex;flex-direction:column;gap:8px;">
+                <p style="font-size:0.85rem;color:#666;margin:4px 0;">선생님별 비번 — 해당 카테고리에만 그림 추가 가능</p>
+              </div>
+              <button id="addTeacherPinBtn" type="button" class="primary" style="align-self:flex-start;">+ 선생님 비번 추가</button>
+            </div>
+          </details>
+
           <div class="backupRow">
             <button id="exportBtn" type="button">백업 다운로드</button>
             <label class="importLabel">백업 불러오기
@@ -136,6 +166,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="./app.js?v=sielSyncOverwrite20260628"></script>
+  <script type="module" src="./app.js?v=sielPinUpdate20260629"></script>
 </body>
 </html>

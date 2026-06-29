@@ -1,4 +1,17 @@
-const ADMIN_PIN = "1208";
+// PIN은 localStorage에 저장 (변경 가능)
+const PIN_STORAGE_KEY = "siel_admin_pin";
+const TEACHER_PINS_KEY = "siel_teacher_pins";
+
+function getAdminPin() {
+  return localStorage.getItem(PIN_STORAGE_KEY) || "1208";
+}
+function getTeacherPins() {
+  try { return JSON.parse(localStorage.getItem(TEACHER_PINS_KEY) || "[]"); }
+  catch { return []; }
+}
+function saveTeacherPins(pins) {
+  localStorage.setItem(TEACHER_PINS_KEY, JSON.stringify(pins));
+}
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
 const OFFLINE_IMAGE_CACHE = "siel-aac-image-cache-v3";
@@ -589,11 +602,16 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielSyncOverwrite20260628");
+    await navigator.serviceWorker.register("./sw.js?v=sielPinUpdate20260629");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
   }
+}
+
+function renderTeacherPinListOnLoad() {
+  // 관리자 패널 열릴 때 선생님 PIN 목록 렌더링
+  renderTeacherPinList && renderTeacherPinList();
 }
 
 function renderAdmin() {
@@ -1037,11 +1055,66 @@ function openAdminTab(tab) {
 }
 
 $("menuBtn").onclick = () => {
-  // 다이얼로그 열 때마다 로그인 상태 초기화
+  // 초기화
   $("adminPanel").classList.add("hidden");
+  $("adminMenu") && $("adminMenu").classList.add("hidden");
   $("pinInput").value = "";
+  $("teacherPinInput") && ($("teacherPinInput").value = "");
+  // 기본: 선생님 화면으로 시작 (선생님 PIN 있을 때)
+  const tPins = getTeacherPins();
+  if (tPins.length > 0) {
+    $("pinArea").classList.add("hidden");
+    $("teacherPinArea").classList.remove("hidden");
+    renderTeacherCategorySelect();
+  } else {
+    $("pinArea").classList.remove("hidden");
+    $("teacherPinArea").classList.add("hidden");
+  }
   $("adminDialog").showModal();
 };
+
+// 관리자로 전환
+$("switchToAdminBtn") && ($("switchToAdminBtn").onclick = () => {
+  $("teacherPinArea").classList.add("hidden");
+  $("pinArea").classList.remove("hidden");
+});
+
+function renderTeacherCategorySelect() {
+  const sel = $("teacherCategorySelect");
+  if (!sel) return;
+  sel.innerHTML = "";
+  const tPins = getTeacherPins();
+  const catIds = [...new Set(tPins.map(p => p.categoryId))];
+  catIds.forEach(cid => {
+    const cat = data.categories.find(c => c.id === cid);
+    if (cat) {
+      const opt = document.createElement("option");
+      opt.value = cid;
+      opt.textContent = cat.icon + " " + cat.name;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+// 선생님 PIN 로그인
+$("teacherLoginBtn") && ($("teacherLoginBtn").onclick = () => {
+  const pin = $("teacherPinInput").value.trim();
+  const catId = $("teacherCategorySelect").value;
+  const tPins = getTeacherPins();
+  const match = tPins.find(p => p.pin === pin && p.categoryId === catId);
+  if (match) {
+    // 해당 카테고리만 선택된 채로 업로드 패널 열기
+    $("adminPanel").classList.remove("hidden");
+    $("adminMenu").classList.remove("hidden");
+    openAdminTab("upload");
+    // 카테고리 고정
+    const sel = $("categorySelect");
+    if (sel) { sel.value = catId; sel.disabled = true; }
+    $("teacherPinArea").classList.add("hidden");
+  } else {
+    alert("비밀번호가 맞지 않아요.");
+  }
+});
 $("cancelEditBtn").onclick = () => resetEditMode();
 $("showUploadBtn").onclick = () => openAdminTab("upload");
 $("showBoardBtn").onclick = () => openAdminTab("board");
@@ -1249,7 +1322,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielSyncOverwrite20260628");
+    const configModule = await import("./firebase-config.js?v=sielPinUpdate20260629");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");

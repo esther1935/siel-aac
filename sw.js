@@ -1,12 +1,12 @@
-const CACHE_NAME = "siel-aac-app-sielSyncOverwrite20260628";
+const CACHE_NAME = "siel-aac-app-sielPinUpdate20260629";
 const IMAGE_CACHE = "siel-aac-image-cache-v3";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=sielSyncOverwrite20260628",
-  "./app.js?v=sielSyncOverwrite20260628",
-  "./manifest.webmanifest?v=sielSyncOverwrite20260628"
+  "./styles.css?v=sielPinUpdate20260629",
+  "./app.js?v=sielPinUpdate20260629",
+  "./manifest.webmanifest?v=sielPinUpdate20260629"
 ];
 
 self.addEventListener("install", (event) => {
