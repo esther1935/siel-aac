@@ -275,13 +275,16 @@ button {
 }
 
 .sentenceLabel {
-  font-size: clamp(26px, 5vw, 38px);
+  font-size: clamp(20px, 4vw, 30px);
   font-weight: 900;
   line-height: 1.05;
   text-align: center;
   max-width: 100%;
   flex: 0 0 auto;
   width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sentenceText {
@@ -290,9 +293,10 @@ button {
   right: clamp(60px, 12vw, 120px);
   bottom: clamp(8px, 1.6vh, 14px);
   height: clamp(26px, 4.5vh, 34px);
-  font-size: clamp(20px, 3.8vw, 28px);
-  font-weight: 900;
-  color: #555;
+  font-size: clamp(18px, 3.4vw, 26px);
+  font-weight: 400;
+  font-family: 'Noto Serif KR', 'Batang', '바탕', Georgia, serif;
+  color: #999;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -376,7 +380,7 @@ button {
 }
 
 .card .label {
-  font-size: clamp(18px, 3.6vw, 26px);
+  font-size: clamp(14px, 2.8vw, 20px);
   font-weight: 900;
   line-height: 1.08;
   text-align: center;
@@ -384,6 +388,9 @@ button {
   flex: 0 0 auto;
   width: 100%;
   padding-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cardsEmpty {
@@ -964,12 +971,12 @@ hr {
   }
 
   .card .label {
-    font-size: clamp(14px, 2.1vw, 18px) !important;
+    font-size: clamp(11px, 1.7vw, 14px) !important;
     line-height: 1.02 !important;
   }
 
   .sentenceLabel {
-    font-size: clamp(14px, 2vw, 18px) !important;
+    font-size: clamp(11px, 1.6vw, 14px) !important;
     line-height: 1.02 !important;
   }
 }
@@ -1060,11 +1067,11 @@ hr {
   }
 
   .card .label {
-    font-size: clamp(13px, 3.5vw, 18px) !important;
+    font-size: clamp(10px, 2.8vw, 14px) !important;
   }
 
   .sentenceLabel {
-    font-size: clamp(20px, 5.5vw, 30px) !important;
+    font-size: clamp(16px, 4.4vw, 24px) !important;
   }
 
   .catTab {
