@@ -2,8 +2,6 @@
 const PIN_STORAGE_KEY = "siel_admin_pin";
 const TEACHER_PINS_KEY = "siel_teacher_pins";
 
-// PIN은 Firebase에 저장해서 모든 기기 공유
-// 로컬은 캐시용으로만 사용
 function getAdminPin() {
   return localStorage.getItem(PIN_STORAGE_KEY) || "1208";
 }
@@ -40,7 +38,7 @@ async function loadPinsFromCloud() {
       if (d.adminPin) localStorage.setItem(PIN_STORAGE_KEY, d.adminPin);
       if (d.teacherPins) localStorage.setItem(TEACHER_PINS_KEY, JSON.stringify(d.teacherPins));
     }
-  } catch(e) { console.warn("PIN 클라우드 불러오기 실패:", e); }
+  } catch(e) { console.warn("PIN 불러오기 실패:", e); }
 }
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
@@ -127,7 +125,6 @@ function normalizeSpeakValues() {
     cat.cards.forEach(card => {
       if (!card.id) card.id = crypto.randomUUID();
       card.speak = card.text || "";
-      if (!card.verbs) card.verbs = [];
     });
   });
 }
@@ -275,12 +272,7 @@ function renderCards() {
     `;
     el.onclick = () => {
       selectedCardId = card.id;
-      // 동사가 연결된 카드면 팝업 표시
-      if (card.verbs && card.verbs.length > 0) {
-        showVerbPopup(card, el);
-      } else {
-        addToSentence(card);
-      }
+      addToSentence(card);
       renderCards();
     };
     scroller.appendChild(el);
@@ -325,201 +317,6 @@ function updateDots() {
   renderDots(total, active);
 }
 
-
-// ===== 동사 연결 기능 =====
-let selectedVerbs = []; // 현재 업로드 중인 카드의 선택된 동사 IDs
-
-// 동사 카테고리 찾기 (이름에 "동사" 포함)
-function getVerbCategory() {
-  return data.categories.find(c => c.name.includes("동사"));
-}
-
-// 동사 선택 패널 렌더링
-function renderVerbPicker() {
-  const panel = $("verbPickerList");
-  if (!panel) return;
-  panel.innerHTML = "";
-
-  const verbCat = getVerbCategory();
-  if (!verbCat || verbCat.cards.length === 0) {
-    panel.innerHTML = '<p style="color:#bbb;font-size:0.85rem;">동사 카테고리에 그림을 먼저 추가해 주세요</p>';
-    return;
-  }
-
-  verbCat.cards.forEach(verb => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.dataset.verbId = verb.id;
-    btn.style.cssText = `
-      display:inline-flex;align-items:center;gap:4px;
-      padding:6px 12px;border-radius:20px;font-size:0.9rem;font-weight:700;
-      border:2px solid ${selectedVerbs.includes(verb.id) ? "#a78bfa" : "#ddd"};
-      background:${selectedVerbs.includes(verb.id) ? "#f0ebff" : "#fff"};
-      color:${selectedVerbs.includes(verb.id) ? "#7c3aed" : "#555"};
-      cursor:pointer;transition:all 0.15s;
-    `;
-    btn.textContent = verb.text;
-    btn.onclick = () => {
-      if (selectedVerbs.includes(verb.id)) {
-        selectedVerbs = selectedVerbs.filter(id => id !== verb.id);
-      } else {
-        selectedVerbs.push(verb.id);
-      }
-      renderVerbPicker();
-      renderVerbChips();
-    };
-    panel.appendChild(btn);
-  });
-}
-
-// 선택된 동사 칩 표시
-function renderVerbChips() {
-  const area = $("verbChipArea");
-  if (!area) return;
-  area.innerHTML = "";
-  const verbCat = getVerbCategory();
-  if (!verbCat) return;
-
-  selectedVerbs.forEach(vid => {
-    const verb = verbCat.cards.find(c => c.id === vid);
-    if (!verb) return;
-    const chip = document.createElement("span");
-    chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;background:#a78bfa;color:#fff;padding:4px 10px;border-radius:16px;font-size:0.85rem;font-weight:700;";
-    chip.innerHTML = verb.text + ' <button type="button" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;padding:0;" data-vid="' + vid + '">×</button>';
-    chip.querySelector("button").onclick = () => {
-      selectedVerbs = selectedVerbs.filter(id => id !== vid);
-      renderVerbPicker();
-      renderVerbChips();
-    };
-    area.appendChild(chip);
-  });
-}
-
-// 동사 선택 패널 토글
-$("verbToggleBtn") && ($("verbToggleBtn").onclick = () => {
-  const panel = $("verbPickerPanel");
-  const isOpen = panel.style.display !== "none";
-  panel.style.display = isOpen ? "none" : "block";
-  if (!isOpen) renderVerbPicker();
-  $("verbToggleBtn").textContent = isOpen ? "＋ 동사 선택하기" : "▲ 닫기";
-});
-
-// 카드 클릭 시 동사 팝업
-function showVerbPopup(card, anchorEl) {
-  // 기존 팝업 제거
-  const old = document.getElementById("verbPopup");
-  if (old) {
-    old.remove();
-    // 같은 카드 클릭 시 토글
-    if (old.dataset.cardId === card.id) {
-      addToSentence(card);
-      return;
-    }
-  }
-
-  const verbCat = getVerbCategory();
-  if (!verbCat) { addToSentence(card); return; }
-
-  const verbCards = card.verbs
-    .map(vid => verbCat.cards.find(c => c.id === vid))
-    .filter(Boolean);
-
-  if (verbCards.length === 0) { addToSentence(card); return; }
-
-  const popup = document.createElement("div");
-  popup.id = "verbPopup";
-  popup.dataset.cardId = card.id;
-  popup.style.cssText = `
-    position:fixed;z-index:9000;
-    background:#fff;border:2px solid #a78bfa;
-    border-radius:16px;padding:10px 12px;
-    box-shadow:0 4px 20px rgba(0,0,0,0.15);
-    display:flex;flex-direction:column;gap:8px;
-    max-width:260px;
-  `;
-
-  // 제목
-  const title = document.createElement("p");
-  title.style.cssText = "margin:0;font-size:0.8rem;color:#a78bfa;font-weight:700;";
-  title.textContent = """ + card.text + "" 와 함께:";
-  popup.appendChild(title);
-
-  // 동사 버튼들
-  const btnRow = document.createElement("div");
-  btnRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
-
-  // 단독 사용 버튼
-  const aloneBtn = document.createElement("button");
-  aloneBtn.type = "button";
-  aloneBtn.style.cssText = "padding:6px 14px;border-radius:20px;border:2px solid #eee;background:#f5f5f5;font-size:0.9rem;font-weight:700;color:#888;cursor:pointer;";
-  aloneBtn.textContent = card.text + " (단독)";
-  aloneBtn.onclick = () => { popup.remove(); addToSentence(card); };
-  btnRow.appendChild(aloneBtn);
-
-  verbCards.forEach(verb => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.style.cssText = "padding:6px 14px;border-radius:20px;border:2px solid #a78bfa;background:#f0ebff;font-size:0.95rem;font-weight:700;color:#7c3aed;cursor:pointer;";
-    btn.textContent = card.text + " " + verb.text;
-    btn.onclick = () => {
-      popup.remove();
-      // 카드+동사 조합을 문장에 추가
-      const combined = {
-        id: card.id + "_" + verb.id,
-        text: card.text + " " + verb.text,
-        speak: card.text + " " + verb.text,
-        image: card.image || ""
-      };
-      addToSentence(combined);
-    };
-    btnRow.appendChild(btn);
-  });
-
-  popup.appendChild(btnRow);
-  document.body.appendChild(popup);
-
-  // 위치 계산
-  const rect = anchorEl.getBoundingClientRect();
-  const pw = popup.offsetWidth || 260;
-  let left = rect.left + rect.width/2 - pw/2;
-  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
-  let top = rect.top - 10;
-  if (top < 60) top = rect.bottom + 10;
-  popup.style.left = left + "px";
-  popup.style.top = top + "px";
-
-  // 바깥 클릭 시 닫기
-  setTimeout(() => {
-    document.addEventListener("click", function closeVerb(e) {
-      if (!popup.contains(e.target)) {
-        popup.remove();
-        document.removeEventListener("click", closeVerb);
-      }
-    });
-  }, 100);
-}
-
-// 카드 추가/수정 시 동사 초기화
-function resetVerbSelect() {
-  selectedVerbs = [];
-  try { renderVerbChips(); } catch(e) {}
-  const panel = $("verbPickerPanel");
-  if (panel) panel.style.display = "none";
-  const btn = $("verbToggleBtn");
-  if (btn) btn.textContent = "＋ 동사 선택하기";
-}
-
-// 동사 선택 행 표시 (카테고리에 동사 카테고리가 있을 때만)
-function updateVerbSelectRow() {
-  try {
-    const row = $("verbSelectRow");
-    if (!row) return;
-    const verbCat = getVerbCategory();
-    row.style.display = verbCat ? "" : "none";
-  } catch(e) {}
-}
-// ===== 동사 기능 끝 =====
-
 function addToSentence(card) {
   const entry = { id: card.id, text: card.text, speak: card.text, image: card.image || "" };
   if (reverseOrder) {
@@ -561,30 +358,19 @@ const emojiList = [
 ];
 
 function showEmojiPicker(cat, anchorBtn) {
-  // 기존 팝업 제거
   const old = document.getElementById("emojiPickerPopup");
   if (old) { old.remove(); return; }
 
   const popup = document.createElement("div");
   popup.id = "emojiPickerPopup";
-  popup.style.cssText = `
-    position:absolute; z-index:99999;
-    background:#fff; border:2px solid #f5c842;
-    border-radius:16px; padding:12px;
-    display:grid; grid-template-columns:repeat(7,1fr);
-    gap:6px; width:290px; max-height:220px;
-    overflow-y:auto; box-shadow:0 4px 24px rgba(0,0,0,0.25);
-  `;
+  popup.style.cssText = "position:absolute;z-index:99999;background:#fff;border:2px solid #f5c842;border-radius:16px;padding:12px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;width:290px;max-height:220px;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,0.25);";
 
-  // 다이얼로그 안에 추가 (z-index 문제 해결)
   const dialog = document.getElementById("adminDialog");
   const anchor = dialog || document.body;
-  anchor.style.position = anchor.style.position || "relative";
 
-  // 위치: 버튼 기준
   const btnRect = anchorBtn.getBoundingClientRect();
   const anchorRect = anchor.getBoundingClientRect();
-  popup.style.top = (btnRect.bottom - anchorRect.top + anchor.scrollTop + 4) + "px";
+  popup.style.top = (btnRect.bottom - anchorRect.top + (anchor.scrollTop||0) + 4) + "px";
   popup.style.left = Math.max(0, Math.min(btnRect.left - anchorRect.left, anchorRect.width - 300)) + "px";
 
   emojiList.forEach(em => {
@@ -605,7 +391,6 @@ function showEmojiPicker(cat, anchorBtn) {
 
   anchor.appendChild(popup);
 
-  // 바깥 클릭 시 닫기
   setTimeout(() => {
     document.addEventListener("click", function closePopup(e) {
       if (!popup.contains(e.target) && e.target !== anchorBtn) {
@@ -629,7 +414,7 @@ function renderCategoryManageList() {
     const count = Array.isArray(cat.cards) ? cat.cards.length : 0;
 
     row.innerHTML = `
-      <button class="catIconBtn" type="button" title="아이콘 바꾸기">${escapeHtml(icon)}</button>
+      <div class="catManageIcon">${escapeHtml(icon)}</div>
       <input class="catRenameInput" value="${escapeHtml(cat.name)}" aria-label="카테고리 이름" />
       <span class="catCardCount">${count}개</span>
       <button class="catUpBtn" type="button" ${index === 0 ? "disabled" : ""}>⬆️</button>
@@ -637,11 +422,6 @@ function renderCategoryManageList() {
       <button class="catRenameBtn" type="button">이름 저장</button>
       <button class="catDeleteBtn" type="button">삭제</button>
     `;
-
-    // 아이콘 버튼 클릭 → 이모지 선택 팝업
-    row.querySelector(".catIconBtn").onclick = () => {
-      showEmojiPicker(cat, row.querySelector(".catIconBtn"));
-    };
 
     const input = row.querySelector(".catRenameInput");
 
@@ -698,8 +478,6 @@ function renderCategoryManageList() {
 function resetEditMode() {
   editingCardId = "";
   $("cardText").value = "";
-  try { resetVerbSelect(); } catch(e) {}
-  try { updateVerbSelectRow(); } catch(e) {}
   $("cardSpeak").value = "";
   $("imageInput").value = "";
   $("addCardBtn").textContent = "그림 추가";
@@ -910,7 +688,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielPinUpdate20260629");
+    await navigator.serviceWorker.register("./sw.js?v=sielRestore20260630");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -935,8 +713,8 @@ function renderAdmin() {
     select.appendChild(option);
   });
 
-  // 선생님 모드: 카테고리 추가/관리 숨김 (pinManager는 로그인 버튼에서만 제어)
-  const catManager = document.querySelector(".categoryManager:not(#pinManager)");
+  // 선생님 모드: 카테고리 추가/관리 숨김
+  const catManager = document.querySelector(".categoryManager");
   const manageTitle = document.querySelector(".manageTitle");
   const addCatRow = $("addCategoryBtn") ? $("addCategoryBtn").closest(".adminRow") : null;
   if (teacherMode) {
@@ -950,7 +728,6 @@ function renderAdmin() {
   }
 
   renderCategoryManageList();
-  try { updateVerbSelectRow(); } catch(e) {}
 
   const del = $("deleteList");
   del.innerHTML = "";
@@ -984,11 +761,6 @@ function renderAdmin() {
         editingCardId = card.id;
         $("categorySelect").value = cat.id;
         $("cardText").value = card.text || "";
-        // 기존 동사 불러오기
-        selectedVerbs = card.verbs ? [...card.verbs] : [];
-        renderVerbChips();
-        renderVerbPicker();
-        updateVerbSelectRow();
         $("cardSpeak").value = card.text || "";
         $("imageInput").value = "";
         $("addCardBtn").textContent = "수정 저장";
@@ -1395,11 +1167,6 @@ async function clearOldCachesOnce() {
 function openAdminTab(tab) {
   $("uploadPanel").classList.toggle("hidden", tab !== "upload");
   $("boardPanel").classList.toggle("hidden", tab !== "board");
-  // 탭 active 상태 업데이트
-  const uploadTab = $("showUploadBtn");
-  const boardTab = $("showBoardBtn");
-  if (uploadTab) uploadTab.classList.toggle("active", tab === "upload");
-  if (boardTab) boardTab.classList.toggle("active", tab === "board");
 }
 
 $("menuBtn").onclick = () => {
@@ -1418,10 +1185,7 @@ $("menuBtn").onclick = () => {
   if (guide) guide.remove();
   const catSel = $("categorySelect");
   if (catSel) catSel.disabled = false;
-  // 비밀번호 관리 다시 숨기기 (다음 로그인 전까지)
-  const pinMgr = $("pinManager");
-  if (pinMgr) pinMgr.style.display = "none";
-  // 기본: 선생님 PIN 있으면 선생님 화면, 없으면 관리자 화면
+  // 기본: 선생님 화면으로 시작 (선생님 PIN 있을 때)
   const tPins = getTeacherPins();
   if (tPins.length > 0) {
     $("pinArea").classList.add("hidden");
@@ -1431,9 +1195,6 @@ $("menuBtn").onclick = () => {
     $("pinArea").classList.remove("hidden");
     $("teacherPinArea").classList.add("hidden");
   }
-  // switchToAdminBtn: 항상 표시 (선생님 PIN 있을 때만 의미 있음)
-  const sBtn = $("switchToAdminBtn");
-  if (sBtn) sBtn.style.display = tPins.length > 0 ? "" : "none";
   $("adminDialog").showModal();
 };
 
@@ -1441,7 +1202,6 @@ $("menuBtn").onclick = () => {
 $("switchToAdminBtn") && ($("switchToAdminBtn").onclick = () => {
   $("teacherPinArea").classList.add("hidden");
   $("pinArea").classList.remove("hidden");
-  $("pinInput").focus();
 });
 
 function renderTeacherCategorySelect() {
@@ -1513,29 +1273,10 @@ $("showBoardBtn").onclick = () => openAdminTab("board");
 
 $("loginBtn").onclick = () => {
   if ($("pinInput").value === getAdminPin()) {
-    // 선생님 모드 초기화
-    teacherMode = false;
-    teacherCatId = null;
-
     $("adminPanel").classList.remove("hidden");
     $("adminMenu").classList.remove("hidden");
-
-    // 관리자 전용: 비밀번호 관리 보이게
-    const pinManager = $("pinManager");
-    if (pinManager) pinManager.style.display = "";
-
-    // syncStatus 복원
-    const syncStatus = $("syncStatus");
-    if (syncStatus) syncStatus.style.display = "";
-
-    // 안내 메시지 제거
-    const guide = $("teacherGuide");
-    if (guide) guide.remove();
-
     const sel = $("categorySelect");
     if (sel) sel.disabled = false;
-
-    renderAdmin();
     renderTeacherPinList();
   } else {
     alert("비밀번호가 맞지 않아요.");
@@ -1635,7 +1376,6 @@ $("addCardBtn").onclick = async () => {
 
       card.text = text;
       card.speak = text;
-      card.verbs = [...selectedVerbs]; // 동사 저장
 
       if (file) {
         const croppedDataUrl = await openCropDialog(file);
@@ -1673,7 +1413,7 @@ $("addCardBtn").onclick = async () => {
       }
     }
 
-    cat.cards.push({ id: cardId, text, speak: text, image, storagePath, verbs: [...selectedVerbs] });
+    cat.cards.push({ id: cardId, text, speak: text, image, storagePath });
     selectedCategoryId = cat.id;
     resetEditMode();
     saveData();
@@ -1792,7 +1532,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielPinUpdate20260629");
+    const configModule = await import("./firebase-config.js?v=sielRestore20260630");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, getDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1812,7 +1552,6 @@ async function initFirebase() {
       deleteObject
     };
 
-    // PIN 클라우드에서 불러오기
     await loadPinsFromCloud();
 
     const ref = doc(db, "aac", "siel");
@@ -1829,9 +1568,6 @@ async function initFirebase() {
         cloud.categories.forEach(cat => {
           if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
           if (!Array.isArray(cat.cards)) cat.cards = [];
-          cat.cards.forEach(card => {
-            if (!card.verbs) card.verbs = [];
-          });
         });
         data = cloud;
         saveLocalOnly();

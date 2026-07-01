@@ -6,28 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#fff7d6" />
-  <title>시소 AAC — 시엘이의 소통도구</title>
-
-  <!-- 카카오톡/SNS 공유 미리보기 -->
-  <meta property="og:type" content="website" />
-  <meta property="og:title" content="시소 AAC" />
-  <meta property="og:description" content="시엘이의 소통도구 🌱 그림으로 마음을 전해요" />
-  <meta property="og:url" content="https://siel-aac.netlify.app" />
-  <meta property="og:image" content="https://siel-aac.netlify.app/icon-512.png" />
-  <meta property="og:image:width" content="512" />
-  <meta property="og:image:height" content="512" />
-  <meta property="og:locale" content="ko_KR" />
-
-  <!-- 카카오톡 전용 -->
-  <meta name="description" content="시엘이의 소통도구 🌱 그림으로 마음을 전해요" />
-
-  <!-- 트위터 카드 -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="시소 AAC" />
-  <meta name="twitter:description" content="시엘이의 소통도구 🌱 그림으로 마음을 전해요" />
-  <meta name="twitter:image" content="https://siel-aac.netlify.app/icon-512.png" />
-  <link rel="manifest" href="./manifest.webmanifest?v=sielPinUpdate20260629" />
-  <link rel="stylesheet" href="./styles.css?v=sielPinUpdate20260629" />
+  <title>시엘 AAC</title>
+  <link rel="manifest" href="./manifest.webmanifest?v=sielRestore20260630" />
+  <link rel="stylesheet" href="./styles.css?v=sielRestore20260630" />
 </head>
 <body>
   <div id="app">
@@ -62,14 +43,10 @@
     <dialog id="adminDialog">
       <div class="adminBox">
         <button class="close" type="button" onclick="document.getElementById('adminDialog').close()">×</button>
-        <!-- 헤더: 타이틀 + 관리자로 로그인 -->
-        <div class="menuHeader">
-          <h2>시엘 AAC 메뉴</h2>
-          <button id="switchToAdminBtn" type="button" class="adminLoginLink">관리자로 로그인</button>
-        </div>
+        <h2>시엘 AAC 메뉴</h2>
 
-        <!-- PIN 입력 영역 (관리자용) -->
-        <div id="pinArea" class="hidden">
+        <!-- PIN 입력 영역 -->
+        <div id="pinArea">
           <input id="pinInput" type="password" inputmode="numeric" placeholder="비밀번호 입력" />
           <button id="loginBtn" class="primary" type="button">확인</button>
         </div>
@@ -79,16 +56,13 @@
           <p style="font-size:0.9rem;color:#888;margin:4px 0 10px;">선생님 전용: 해당 카테고리 PIN 입력</p>
           <input id="teacherPinInput" type="password" inputmode="numeric" placeholder="선생님 비밀번호" />
           <select id="teacherCategorySelect"></select>
-          <button id="teacherLoginBtn" class="primary teacherMainBtn" type="button">그림추가</button>
+          <button id="teacherLoginBtn" class="primary" type="button">그림 추가</button>
+          <button id="switchToAdminBtn" type="button" style="font-size:0.8rem;color:#aaa;background:none;border:none;cursor:pointer;">관리자로 로그인</button>
         </div>
 
-        <!-- 관리자 탭 (로그인 후) -->
         <div class="adminMenu hidden" id="adminMenu">
-          <div class="adminTabBar">
-            <button id="showUploadBtn" class="adminTab active" type="button">AAC그림관리</button>
-            <span class="adminTabDivider">|</span>
-            <button id="showBoardBtn" class="adminTab" type="button">게시판</button>
-          </div>
+          <button id="showUploadBtn" class="primary" type="button">그림 올리기</button>
+          <button id="showBoardBtn" type="button">게시판</button>
         </div>
 
         <div id="adminPanel" class="hidden">
@@ -119,19 +93,6 @@
               </div>
             </div>
 
-            <!-- 동사 선택 영역 -->
-            <div class="adminRow" id="verbSelectRow" style="display:none;">
-              <label>동사 연결<br/><span style="font-size:0.75rem;color:#aaa;font-weight:400;">중복 선택 가능</span></label>
-              <div class="adminFieldGroup" style="flex-direction:column;gap:8px;">
-                <button id="verbToggleBtn" type="button" class="verbToggleBtn">＋ 동사 선택하기</button>
-                <div id="verbChipArea" style="display:flex;flex-wrap:wrap;gap:6px;min-height:0;"></div>
-                <div id="verbPickerPanel" style="display:none;background:#f8f5ff;border-radius:12px;padding:10px;max-height:180px;overflow-y:auto;">
-                  <p style="font-size:0.8rem;color:#999;margin:0 0 8px;">동사 카테고리에서 불러오는 중...</p>
-                  <div id="verbPickerList" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-                </div>
-              </div>
-            </div>
-
             <h3 class="manageTitle">현재 그림 수정, 삭제</h3>
             <div id="deleteList" class="deleteList"></div>
           </section>
@@ -146,7 +107,7 @@
           <div id="syncStatus" class="syncStatus">오프라인 저장 준비 중</div>
 
           <!-- 비밀번호 관리 -->
-          <details class="categoryManager" id="pinManager" style="display:none;">
+          <details class="categoryManager">
             <summary>🔐 비밀번호 관리</summary>
             <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
               <div class="adminRow">
@@ -205,6 +166,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="./app.js?v=sielPinUpdate20260629"></script>
+  <script type="module" src="./app.js?v=sielRestore20260630"></script>
 </body>
 </html>
