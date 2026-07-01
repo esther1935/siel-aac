@@ -128,6 +128,7 @@ function normalizeSpeakValues() {
       if (!card.id) card.id = crypto.randomUUID();
       card.speak = card.text || "";
       if (!card.verbs) card.verbs = [];
+      if (!card.subjects) card.subjects = [];
     });
   });
 }
@@ -337,6 +338,90 @@ function updateDots() {
 }
 
 
+
+// ===== 주어 연결 기능 =====
+let selectedSubjects = [];
+
+function getSubjectCategory() {
+  return data.categories.find(c => c.name.includes("주어"));
+}
+
+function renderSubjectPicker() {
+  const panel = $("subjectPickerList");
+  if (!panel) return;
+  panel.innerHTML = "";
+  const subCat = getSubjectCategory();
+  if (!subCat || subCat.cards.length === 0) {
+    panel.innerHTML = '<p style="color:#bbb;font-size:0.85rem;margin:0;">"주어" 카테고리에 그림을 먼저 추가해 주세요</p>';
+    return;
+  }
+  subCat.cards.forEach(sub => {
+    const isSelected = selectedSubjects.includes(sub.id);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.cssText = "padding:6px 14px;border-radius:20px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.15s;" +
+      (isSelected ? "border:2px solid #f5a623;background:#fff8ee;color:#c47a00;" : "border:2px solid #ddd;background:#fff;color:#555;");
+    btn.textContent = sub.text;
+    btn.onclick = () => {
+      if (selectedSubjects.includes(sub.id)) {
+        selectedSubjects = selectedSubjects.filter(id => id !== sub.id);
+      } else {
+        selectedSubjects.push(sub.id);
+      }
+      renderSubjectPicker();
+      renderSubjectChips();
+    };
+    panel.appendChild(btn);
+  });
+}
+
+function renderSubjectChips() {
+  const area = $("subjectChipArea");
+  if (!area) return;
+  area.innerHTML = "";
+  const subCat = getSubjectCategory();
+  if (!subCat) return;
+  selectedSubjects.forEach(sid => {
+    const sub = subCat.cards.find(c => c.id === sid);
+    if (!sub) return;
+    const chip = document.createElement("span");
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;background:#f5a623;color:#fff;padding:4px 10px;border-radius:16px;font-size:0.85rem;font-weight:700;";
+    chip.innerHTML = escapeHtml(sub.text) + ' <button type="button" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;padding:0;">×</button>';
+    chip.querySelector("button").onclick = () => {
+      selectedSubjects = selectedSubjects.filter(id => id !== sid);
+      renderSubjectPicker();
+      renderSubjectChips();
+    };
+    area.appendChild(chip);
+  });
+}
+
+$("subjectToggleBtn") && ($("subjectToggleBtn").onclick = () => {
+  const panel = $("subjectPickerPanel");
+  const isOpen = panel.style.display !== "none";
+  panel.style.display = isOpen ? "none" : "block";
+  if (!isOpen) renderSubjectPicker();
+  $("subjectToggleBtn").textContent = isOpen ? "＋ 주어 선택하기" : "▲ 닫기";
+});
+
+function updateSubjectSelectRow() {
+  try {
+    const row = $("subjectSelectRow");
+    if (!row) return;
+    row.style.display = getSubjectCategory() ? "" : "none";
+  } catch(e) {}
+}
+
+function resetSubjectSelect() {
+  selectedSubjects = [];
+  try { renderSubjectChips(); } catch(e) {}
+  const panel = $("subjectPickerPanel");
+  if (panel) panel.style.display = "none";
+  const btn = $("subjectToggleBtn");
+  if (btn) btn.textContent = "＋ 주어 선택하기";
+}
+// ===== 주어 기능 끝 =====
+
 // ===== 동사 연결 기능 =====
 let selectedVerbs = [];
 
@@ -420,8 +505,50 @@ function resetVerbSelect() {
   if (btn) btn.textContent = "＋ 동사 선택하기";
 }
 
+
+function makeCardBtn(card, cw, ih, gap) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.style.cssText = [
+    "flex:0 0 " + cw + "px",
+    "width:" + cw + "px",
+    "display:flex",
+    "flex-direction:column",
+    "align-items:center",
+    "gap:3px",
+    "background:none",
+    "border:none",
+    "padding:2px",
+    "cursor:pointer",
+    "scroll-snap-align:start",
+    "border-radius:8px"
+  ].join(";");
+  btn.onmouseover = () => btn.style.background = "#f5f5f5";
+  btn.onmouseout  = () => btn.style.background = "none";
+
+  const imgWrap = document.createElement("div");
+  imgWrap.style.cssText = "width:" + ih + "px;height:" + ih + "px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+  if (card.image) {
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.alt = card.text;
+    img.style.cssText = "width:100%;height:100%;object-fit:contain;";
+    img.onerror = () => { imgWrap.textContent = "🔤"; };
+    imgWrap.appendChild(img);
+  } else {
+    imgWrap.style.cssText += "font-size:1.4rem;";
+    imgWrap.textContent = "🔤";
+  }
+  btn.appendChild(imgWrap);
+
+  const lbl = document.createElement("span");
+  lbl.textContent = card.text;
+  lbl.style.cssText = "font-size:11px;font-weight:700;color:#333;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;";
+  btn.appendChild(lbl);
+  return btn;
+}
+
 function showVerbPopup(card, anchorRect) {
-  // 기존 팝업 제거
   const oldPopup = document.getElementById("verbPopup");
   if (oldPopup) {
     const same = oldPopup.dataset.cardId === card.id;
@@ -430,134 +557,146 @@ function showVerbPopup(card, anchorRect) {
   }
 
   const verbCat = getVerbCategory();
-  if (!verbCat) { addToSentence(card); return; }
+  const subCat  = getSubjectCategory();
 
-  const verbCards = (card.verbs || [])
-    .map(vid => verbCat.cards.find(c => c.id === vid))
-    .filter(Boolean);
+  const verbCards = verbCat
+    ? (card.verbs || []).map(vid => verbCat.cards.find(c => c.id === vid)).filter(Boolean)
+    : [];
+  const subCards = subCat
+    ? (card.subjects || []).map(sid => subCat.cards.find(c => c.id === sid)).filter(Boolean)
+    : [];
 
-  if (verbCards.length === 0) { addToSentence(card); return; }
+  if (verbCards.length === 0 && subCards.length === 0) { addToSentence(card); return; }
 
-  // 카드 크기: 화면 너비 기준
-  const vw = window.innerWidth;
-  const cw = Math.min(Math.floor(vw * 0.22), 96); // 카드 너비
-  const ih = cw - 14; // 이미지 크기
+  const vw  = window.innerWidth;
   const gap = 6;
   const pad = 10;
-
-  // 팝업 너비: 카드 수만큼 (최대 화면 92%)
-  const totalW = Math.min(verbCards.length * (cw + gap) - gap + pad * 2, vw * 0.92);
+  const cw  = Math.min(Math.floor(vw * 0.22), 96);
+  const ih  = cw - 14;
+  const maxW = Math.min(Math.max(subCards.length, verbCards.length) * (cw + gap) - gap + pad * 2, vw * 0.92);
 
   const popup = document.createElement("div");
   popup.id = "verbPopup";
   popup.dataset.cardId = card.id;
   popup.style.cssText = [
-    "position:fixed",
-    "z-index:9000",
-    "background:#fff",
-    "border-radius:12px",
+    "position:fixed", "z-index:9000",
+    "background:#fff", "border-radius:14px",
     "padding:" + pad + "px",
     "box-shadow:0 4px 18px rgba(0,0,0,0.15)",
-    "display:flex",
-    "flex-direction:column",
-    "overflow:hidden",
-    "max-width:" + totalW + "px",
-    "width:" + totalW + "px"
+    "display:flex", "flex-direction:column", "gap:6px",
+    "overflow:hidden", "width:" + maxW + "px"
   ].join(";");
 
-  // 카드 행
-  const row = document.createElement("div");
-  row.style.cssText = [
-    "display:flex",
-    "gap:" + gap + "px",
-    "overflow-x:auto",
-    "overflow-y:hidden",
-    "-webkit-overflow-scrolling:touch",
-    "scroll-snap-type:x mandatory",
-    "scrollbar-width:none",
-    "padding-right:4px",   // 마지막 카드 안 잘리게
-    "box-sizing:border-box"
-  ].join(";");
+  // 선택된 주어 상태 (팝업 안에서 임시 관리)
+  let pickedSubject = null;
 
-  verbCards.forEach(verb => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.style.cssText = [
-      "flex:0 0 " + cw + "px",
-      "width:" + cw + "px",
-      "display:flex",
-      "flex-direction:column",
-      "align-items:center",
-      "gap:3px",
-      "background:none",
-      "border:none",
-      "padding:2px",
-      "cursor:pointer",
-      "scroll-snap-align:start",
-      "border-radius:8px"
-    ].join(";");
-    btn.onmouseover = () => btn.style.background = "#f5f5f5";
-    btn.onmouseout  = () => btn.style.background = "none";
+  // ── 주어 행 ──
+  if (subCards.length > 0) {
+    const subLabel = document.createElement("p");
+    subLabel.style.cssText = "margin:0;font-size:10px;color:#aaa;font-weight:700;letter-spacing:0.5px;";
+    subLabel.textContent = "주어";
+    popup.appendChild(subLabel);
 
-    // 이미지
-    const imgWrap = document.createElement("div");
-    imgWrap.style.cssText = "width:" + ih + "px;height:" + ih + "px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
-    if (verb.image) {
-      const img = document.createElement("img");
-      img.src = verb.image;
-      img.alt = verb.text;
-      img.style.cssText = "width:100%;height:100%;object-fit:contain;";
-      img.onerror = () => { imgWrap.textContent = "🔤"; };
-      imgWrap.appendChild(img);
-    } else {
-      imgWrap.style.cssText += "font-size:1.4rem;";
-      imgWrap.textContent = "🔤";
+    const subRow = document.createElement("div");
+    subRow.style.cssText = "display:flex;gap:" + gap + "px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:none;padding-right:4px;";
+
+    subCards.forEach(sub => {
+      const btn = makeCardBtn(sub, cw, ih, gap);
+      btn.id = "subBtn_" + sub.id;
+      // 기본: 흰색 배경
+      btn.style.background = "#fff";
+      btn.onmouseover = () => { if (pickedSubject !== sub.id) btn.style.background = "#f0f0f0"; };
+      btn.onmouseout = () => { if (pickedSubject !== sub.id) btn.style.background = "#fff"; };
+      btn.onclick = () => {
+        // 주어 선택/해제 토글 (팝업 유지)
+        if (pickedSubject === sub.id) {
+          pickedSubject = null;
+          btn.style.background = "#fff";
+          btn.style.border = "none";
+        } else {
+          // 이전 선택 해제
+          subCards.forEach(s => {
+            const b = document.getElementById("subBtn_" + s.id);
+            if (b) { b.style.background = "#fff"; b.style.border = "none"; }
+          });
+          pickedSubject = sub.id;
+          btn.style.background = "#fff";
+          btn.style.border = "2.5px solid #A6A6A6";
+          btn.style.borderRadius = "8px";
+        }
+        // 동사 없으면 바로 완성
+        if (verbCards.length === 0) {
+          popup.remove();
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(sub.text + " " + card.text);
+          u.lang = "ko-KR"; u.rate = 0.85;
+          window.speechSynthesis.speak(u);
+          addToSentence(sub, true);
+          addToSentence(card, true);
+          renderCards();
+        }
+      };
+      subRow.appendChild(btn);
+    });
+    popup.appendChild(subRow);
+  }
+
+  // ── 동사 행 ──
+  if (verbCards.length > 0) {
+    if (subCards.length > 0) {
+      const divider = document.createElement("p");
+      divider.style.cssText = "margin:0;font-size:10px;color:#aaa;font-weight:700;letter-spacing:0.5px;";
+      divider.textContent = "동사";
+      popup.appendChild(divider);
     }
-    btn.appendChild(imgWrap);
 
-    // 라벨 (기본 텍스트 색)
-    const lbl = document.createElement("span");
-    lbl.textContent = verb.text;
-    lbl.style.cssText = "font-size:11px;font-weight:700;color:#333;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;";
-    btn.appendChild(lbl);
+    const verbRow = document.createElement("div");
+    verbRow.style.cssText = "display:flex;gap:" + gap + "px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;scrollbar-width:none;padding-right:4px;box-sizing:border-box;";
 
-    btn.onclick = () => {
-      popup.remove();
-      // 소리: 명사+동사 합쳐서 한 번에
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(card.text + " " + verb.text);
-      u.lang = "ko-KR"; u.rate = 0.85;
-      window.speechSynthesis.speak(u);
-      // 문장 추가 (소리 없이)
-      addToSentence(card, true);
-      addToSentence(verb, true);
-      renderCards();
-    };
+    verbCards.forEach(verb => {
+      const btn = makeCardBtn(verb, cw, ih, gap);
+      btn.onclick = () => {
+        popup.remove();
+        // 주어가 선택됐으면 주어+명사+동사, 아니면 명사+동사
+        if (pickedSubject) {
+          const sub = subCards.find(s => s.id === pickedSubject);
+          if (sub) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(sub.text + " " + card.text + " " + verb.text);
+            u.lang = "ko-KR"; u.rate = 0.85;
+            window.speechSynthesis.speak(u);
+            addToSentence(sub, true);
+            addToSentence(card, true);
+            addToSentence(verb, true);
+          }
+        } else {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(card.text + " " + verb.text);
+          u.lang = "ko-KR"; u.rate = 0.85;
+          window.speechSynthesis.speak(u);
+          addToSentence(card, true);
+          addToSentence(verb, true);
+        }
+        renderCards();
+      };
+      verbRow.appendChild(btn);
+    });
+    popup.appendChild(verbRow);
+  }
 
-    row.appendChild(btn);
-  });
-
-  popup.appendChild(row);
-
-  // 팝업 위치: 선택한 카드 바로 위에 고정
+  // 팝업 배치
   popup.style.visibility = "hidden";
   popup.style.top = "-9999px";
   document.body.appendChild(popup);
 
   requestAnimationFrame(() => {
-    // getBoundingClientRect는 viewport 기준 — 스크롤과 무관하게 정확함
-    const r = anchorRect; // 미리 저장된 rect 사용
+    const r = anchorRect;
     const ph = popup.offsetHeight;
     const pw2 = popup.offsetWidth;
-
-    // 좌우: 카드 중앙 기준
     let left = r.left + r.width / 2 - pw2 / 2;
     left = Math.max(4, Math.min(left, window.innerWidth - pw2 - 4));
-
-    // 상하: 카드 바로 위 우선, 공간 없으면 아래
     let top = r.top - ph - 8;
     if (top < 4) top = r.bottom + 8;
-
     popup.style.left = left + "px";
     popup.style.top  = top  + "px";
     popup.style.visibility = "visible";
@@ -754,6 +893,7 @@ function resetEditMode() {
   editingCardId = "";
   $("cardText").value = "";
   try { resetVerbSelect(); updateVerbSelectRow(); } catch(e) {}
+  try { resetSubjectSelect(); updateSubjectSelectRow(); } catch(e) {}
   $("cardSpeak").value = "";
   $("imageInput").value = "";
   $("addCardBtn").textContent = "그림 추가";
@@ -1004,7 +1144,7 @@ function renderAdmin() {
   }
 
   renderCategoryManageList();
-  try { updateVerbSelectRow(); } catch(e) {}
+  try { updateVerbSelectRow(); updateSubjectSelectRow(); } catch(e) {}
 
   const del = $("deleteList");
   del.innerHTML = "";
@@ -1039,7 +1179,9 @@ function renderAdmin() {
         $("categorySelect").value = cat.id;
         $("cardText").value = card.text || "";
         selectedVerbs = card.verbs ? [...card.verbs] : [];
+        selectedSubjects = card.subjects ? [...card.subjects] : [];
         try { renderVerbChips(); renderVerbPicker(); updateVerbSelectRow(); } catch(e) {}
+        try { renderSubjectChips(); renderSubjectPicker(); updateSubjectSelectRow(); } catch(e) {}
         $("cardSpeak").value = card.text || "";
         $("imageInput").value = "";
         $("addCardBtn").textContent = "수정 저장";
@@ -1687,6 +1829,7 @@ $("addCardBtn").onclick = async () => {
       card.text = text;
       card.speak = text;
       card.verbs = [...selectedVerbs];
+      card.subjects = [...selectedSubjects];
 
       if (file) {
         const croppedDataUrl = await openCropDialog(file);
@@ -1724,7 +1867,7 @@ $("addCardBtn").onclick = async () => {
       }
     }
 
-    cat.cards.push({ id: cardId, text, speak: text, image, storagePath, verbs: [...selectedVerbs] });
+    cat.cards.push({ id: cardId, text, speak: text, image, storagePath, verbs: [...selectedVerbs], subjects: [...selectedSubjects] });
     selectedCategoryId = cat.id;
     resetEditMode();
     saveData();
@@ -1880,7 +2023,7 @@ async function initFirebase() {
         cloud.categories.forEach(cat => {
           if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
           if (!Array.isArray(cat.cards)) cat.cards = [];
-          cat.cards.forEach(card => { if (!card.verbs) card.verbs = []; });
+          cat.cards.forEach(card => { if (!card.verbs) card.verbs = []; if (!card.subjects) card.subjects = []; });
         });
         data = cloud;
         saveLocalOnly();
