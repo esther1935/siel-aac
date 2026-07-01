@@ -502,7 +502,7 @@ function showVerbPopup(card, anchorEl) {
 // 카드 추가/수정 시 동사 초기화
 function resetVerbSelect() {
   selectedVerbs = [];
-  renderVerbChips();
+  try { renderVerbChips(); } catch(e) {}
   const panel = $("verbPickerPanel");
   if (panel) panel.style.display = "none";
   const btn = $("verbToggleBtn");
@@ -511,10 +511,12 @@ function resetVerbSelect() {
 
 // 동사 선택 행 표시 (카테고리에 동사 카테고리가 있을 때만)
 function updateVerbSelectRow() {
-  const row = $("verbSelectRow");
-  if (!row) return;
-  const verbCat = getVerbCategory();
-  row.style.display = verbCat ? "" : "none";
+  try {
+    const row = $("verbSelectRow");
+    if (!row) return;
+    const verbCat = getVerbCategory();
+    row.style.display = verbCat ? "" : "none";
+  } catch(e) {}
 }
 // ===== 동사 기능 끝 =====
 
@@ -696,8 +698,8 @@ function renderCategoryManageList() {
 function resetEditMode() {
   editingCardId = "";
   $("cardText").value = "";
-  resetVerbSelect();
-  updateVerbSelectRow();
+  try { resetVerbSelect(); } catch(e) {}
+  try { updateVerbSelectRow(); } catch(e) {}
   $("cardSpeak").value = "";
   $("imageInput").value = "";
   $("addCardBtn").textContent = "그림 추가";
@@ -948,7 +950,7 @@ function renderAdmin() {
   }
 
   renderCategoryManageList();
-  updateVerbSelectRow();
+  try { updateVerbSelectRow(); } catch(e) {}
 
   const del = $("deleteList");
   del.innerHTML = "";
@@ -1827,6 +1829,9 @@ async function initFirebase() {
         cloud.categories.forEach(cat => {
           if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
           if (!Array.isArray(cat.cards)) cat.cards = [];
+          cat.cards.forEach(card => {
+            if (!card.verbs) card.verbs = [];
+          });
         });
         data = cloud;
         saveLocalOnly();
