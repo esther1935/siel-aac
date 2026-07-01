@@ -127,6 +127,7 @@ function normalizeSpeakValues() {
     cat.cards.forEach(card => {
       if (!card.id) card.id = crypto.randomUUID();
       card.speak = card.text || "";
+      if (!card.verbs) card.verbs = [];
     });
   });
 }
@@ -273,14 +274,30 @@ function renderCards() {
       <div class="label">${escapeHtml(card.text)}</div>
     `;
     el.onclick = () => {
+      // 기존 동사 팝업 닫기
+      const vp = document.getElementById("verbPopup");
+      if (vp) vp.remove();
+
       selectedCardId = card.id;
-      addToSentence(card);
-      renderCards();
+
+      if (card.verbs && card.verbs.length > 0) {
+        const rect = el.getBoundingClientRect();
+        renderCards(); // 선택 테두리 먼저 업데이트
+        showVerbPopup(card, rect);
+      } else {
+        addToSentence(card);
+        renderCards();
+      }
     };
     scroller.appendChild(el);
   });
 
-  scroller.onscroll = () => updateDots();
+  scroller.onscroll = () => {
+    updateDots();
+    // 카드 스크롤 시 동사 팝업 닫기
+    const vp = document.getElementById("verbPopup");
+    if (vp) vp.remove();
+  };
   requestAnimationFrame(updateDots);
 }
 
@@ -319,16 +336,255 @@ function updateDots() {
   renderDots(total, active);
 }
 
-function addToSentence(card) {
+
+// ===== 동사 연결 기능 =====
+let selectedVerbs = [];
+
+function getVerbCategory() {
+  return data.categories.find(c => c.name.includes("동사"));
+}
+
+function renderVerbPicker() {
+  const panel = $("verbPickerList");
+  if (!panel) return;
+  panel.innerHTML = "";
+  const verbCat = getVerbCategory();
+  if (!verbCat || verbCat.cards.length === 0) {
+    panel.innerHTML = '<p style="color:#bbb;font-size:0.85rem;margin:0;">"동사" 카테고리에 그림을 먼저 추가해 주세요</p>';
+    return;
+  }
+  verbCat.cards.forEach(verb => {
+    const isSelected = selectedVerbs.includes(verb.id);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.verbId = verb.id;
+    btn.style.cssText = "padding:6px 14px;border-radius:20px;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.15s;" +
+      (isSelected ? "border:2px solid #a78bfa;background:#f0ebff;color:#7c3aed;" : "border:2px solid #ddd;background:#fff;color:#555;");
+    btn.textContent = verb.text;
+    btn.onclick = () => {
+      if (selectedVerbs.includes(verb.id)) {
+        selectedVerbs = selectedVerbs.filter(id => id !== verb.id);
+      } else {
+        selectedVerbs.push(verb.id);
+      }
+      renderVerbPicker();
+      renderVerbChips();
+    };
+    panel.appendChild(btn);
+  });
+}
+
+function renderVerbChips() {
+  const area = $("verbChipArea");
+  if (!area) return;
+  area.innerHTML = "";
+  const verbCat = getVerbCategory();
+  if (!verbCat) return;
+  selectedVerbs.forEach(vid => {
+    const verb = verbCat.cards.find(c => c.id === vid);
+    if (!verb) return;
+    const chip = document.createElement("span");
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;background:#a78bfa;color:#fff;padding:4px 10px;border-radius:16px;font-size:0.85rem;font-weight:700;";
+    chip.innerHTML = escapeHtml(verb.text) + ' <button type="button" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;padding:0;">×</button>';
+    chip.querySelector("button").onclick = () => {
+      selectedVerbs = selectedVerbs.filter(id => id !== vid);
+      renderVerbPicker();
+      renderVerbChips();
+    };
+    area.appendChild(chip);
+  });
+}
+
+$("verbToggleBtn") && ($("verbToggleBtn").onclick = () => {
+  const panel = $("verbPickerPanel");
+  const isOpen = panel.style.display !== "none";
+  panel.style.display = isOpen ? "none" : "block";
+  if (!isOpen) renderVerbPicker();
+  $("verbToggleBtn").textContent = isOpen ? "＋ 동사 선택하기" : "▲ 닫기";
+});
+
+function updateVerbSelectRow() {
+  try {
+    const row = $("verbSelectRow");
+    if (!row) return;
+    row.style.display = getVerbCategory() ? "" : "none";
+  } catch(e) {}
+}
+
+function resetVerbSelect() {
+  selectedVerbs = [];
+  try { renderVerbChips(); } catch(e) {}
+  const panel = $("verbPickerPanel");
+  if (panel) panel.style.display = "none";
+  const btn = $("verbToggleBtn");
+  if (btn) btn.textContent = "＋ 동사 선택하기";
+}
+
+function showVerbPopup(card, anchorRect) {
+  // 기존 팝업 제거
+  const oldPopup = document.getElementById("verbPopup");
+  if (oldPopup) {
+    const same = oldPopup.dataset.cardId === card.id;
+    oldPopup.remove();
+    if (same) return;
+  }
+
+  const verbCat = getVerbCategory();
+  if (!verbCat) { addToSentence(card); return; }
+
+  const verbCards = (card.verbs || [])
+    .map(vid => verbCat.cards.find(c => c.id === vid))
+    .filter(Boolean);
+
+  if (verbCards.length === 0) { addToSentence(card); return; }
+
+  // 카드 크기: 화면 너비 기준
+  const vw = window.innerWidth;
+  const cw = Math.min(Math.floor(vw * 0.22), 96); // 카드 너비
+  const ih = cw - 14; // 이미지 크기
+  const gap = 6;
+  const pad = 10;
+
+  // 팝업 너비: 카드 수만큼 (최대 화면 92%)
+  const totalW = Math.min(verbCards.length * (cw + gap) - gap + pad * 2, vw * 0.92);
+
+  const popup = document.createElement("div");
+  popup.id = "verbPopup";
+  popup.dataset.cardId = card.id;
+  popup.style.cssText = [
+    "position:fixed",
+    "z-index:9000",
+    "background:#fff",
+    "border-radius:12px",
+    "padding:" + pad + "px",
+    "box-shadow:0 4px 18px rgba(0,0,0,0.15)",
+    "display:flex",
+    "flex-direction:column",
+    "overflow:hidden",
+    "max-width:" + totalW + "px",
+    "width:" + totalW + "px"
+  ].join(";");
+
+  // 카드 행
+  const row = document.createElement("div");
+  row.style.cssText = [
+    "display:flex",
+    "gap:" + gap + "px",
+    "overflow-x:auto",
+    "overflow-y:hidden",
+    "-webkit-overflow-scrolling:touch",
+    "scroll-snap-type:x mandatory",
+    "scrollbar-width:none",
+    "padding-right:4px",   // 마지막 카드 안 잘리게
+    "box-sizing:border-box"
+  ].join(";");
+
+  verbCards.forEach(verb => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.cssText = [
+      "flex:0 0 " + cw + "px",
+      "width:" + cw + "px",
+      "display:flex",
+      "flex-direction:column",
+      "align-items:center",
+      "gap:3px",
+      "background:none",
+      "border:none",
+      "padding:2px",
+      "cursor:pointer",
+      "scroll-snap-align:start",
+      "border-radius:8px"
+    ].join(";");
+    btn.onmouseover = () => btn.style.background = "#f5f5f5";
+    btn.onmouseout  = () => btn.style.background = "none";
+
+    // 이미지
+    const imgWrap = document.createElement("div");
+    imgWrap.style.cssText = "width:" + ih + "px;height:" + ih + "px;overflow:hidden;display:flex;align-items:center;justify-content:center;flex-shrink:0;";
+    if (verb.image) {
+      const img = document.createElement("img");
+      img.src = verb.image;
+      img.alt = verb.text;
+      img.style.cssText = "width:100%;height:100%;object-fit:contain;";
+      img.onerror = () => { imgWrap.textContent = "🔤"; };
+      imgWrap.appendChild(img);
+    } else {
+      imgWrap.style.cssText += "font-size:1.4rem;";
+      imgWrap.textContent = "🔤";
+    }
+    btn.appendChild(imgWrap);
+
+    // 라벨 (기본 텍스트 색)
+    const lbl = document.createElement("span");
+    lbl.textContent = verb.text;
+    lbl.style.cssText = "font-size:11px;font-weight:700;color:#333;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;";
+    btn.appendChild(lbl);
+
+    btn.onclick = () => {
+      popup.remove();
+      // 소리: 명사+동사 합쳐서 한 번에
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(card.text + " " + verb.text);
+      u.lang = "ko-KR"; u.rate = 0.85;
+      window.speechSynthesis.speak(u);
+      // 문장 추가 (소리 없이)
+      addToSentence(card, true);
+      addToSentence(verb, true);
+      renderCards();
+    };
+
+    row.appendChild(btn);
+  });
+
+  popup.appendChild(row);
+
+  // 팝업 위치: 선택한 카드 바로 위에 고정
+  popup.style.visibility = "hidden";
+  popup.style.top = "-9999px";
+  document.body.appendChild(popup);
+
+  requestAnimationFrame(() => {
+    // getBoundingClientRect는 viewport 기준 — 스크롤과 무관하게 정확함
+    const r = anchorRect; // 미리 저장된 rect 사용
+    const ph = popup.offsetHeight;
+    const pw2 = popup.offsetWidth;
+
+    // 좌우: 카드 중앙 기준
+    let left = r.left + r.width / 2 - pw2 / 2;
+    left = Math.max(4, Math.min(left, window.innerWidth - pw2 - 4));
+
+    // 상하: 카드 바로 위 우선, 공간 없으면 아래
+    let top = r.top - ph - 8;
+    if (top < 4) top = r.bottom + 8;
+
+    popup.style.left = left + "px";
+    popup.style.top  = top  + "px";
+    popup.style.visibility = "visible";
+  });
+
+  // 바깥 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener("click", function closeVerb(e) {
+      if (!popup.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener("click", closeVerb);
+      }
+    });
+  }, 100);
+}
+// ===== 동사 기능 끝 =====
+
+function addToSentence(card, silent = false) {
   const entry = { id: card.id, text: card.text, speak: card.text, image: card.image || "" };
   if (reverseOrder) {
-    sentenceCards.unshift(entry); // 최신이 왼쪽 (시엘이 모드)
+    sentenceCards.unshift(entry);
   } else {
-    sentenceCards.push(entry);    // 최신이 오른쪽 (한글 학습 모드)
+    sentenceCards.push(entry);
   }
   addRecent(card);
   renderSentence();
-  speak(card.text);
+  if (!silent) speak(card.text);
 }
 
 function getRecent() {
@@ -497,6 +753,7 @@ function renderCategoryManageList() {
 function resetEditMode() {
   editingCardId = "";
   $("cardText").value = "";
+  try { resetVerbSelect(); updateVerbSelectRow(); } catch(e) {}
   $("cardSpeak").value = "";
   $("imageInput").value = "";
   $("addCardBtn").textContent = "그림 추가";
@@ -747,6 +1004,7 @@ function renderAdmin() {
   }
 
   renderCategoryManageList();
+  try { updateVerbSelectRow(); } catch(e) {}
 
   const del = $("deleteList");
   del.innerHTML = "";
@@ -780,6 +1038,8 @@ function renderAdmin() {
         editingCardId = card.id;
         $("categorySelect").value = cat.id;
         $("cardText").value = card.text || "";
+        selectedVerbs = card.verbs ? [...card.verbs] : [];
+        try { renderVerbChips(); renderVerbPicker(); updateVerbSelectRow(); } catch(e) {}
         $("cardSpeak").value = card.text || "";
         $("imageInput").value = "";
         $("addCardBtn").textContent = "수정 저장";
@@ -1426,6 +1686,7 @@ $("addCardBtn").onclick = async () => {
 
       card.text = text;
       card.speak = text;
+      card.verbs = [...selectedVerbs];
 
       if (file) {
         const croppedDataUrl = await openCropDialog(file);
@@ -1463,7 +1724,7 @@ $("addCardBtn").onclick = async () => {
       }
     }
 
-    cat.cards.push({ id: cardId, text, speak: text, image, storagePath });
+    cat.cards.push({ id: cardId, text, speak: text, image, storagePath, verbs: [...selectedVerbs] });
     selectedCategoryId = cat.id;
     resetEditMode();
     saveData();
@@ -1619,6 +1880,7 @@ async function initFirebase() {
         cloud.categories.forEach(cat => {
           if (!cat.icon) cat.icon = categoryIcons[cat.name] || "▫️";
           if (!Array.isArray(cat.cards)) cat.cards = [];
+          cat.cards.forEach(card => { if (!card.verbs) card.verbs = []; });
         });
         data = cloud;
         saveLocalOnly();
