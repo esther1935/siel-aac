@@ -1158,3 +1158,22 @@ hr {
   font-size: 1rem;
   flex-shrink: 0;
 }
+
+/* 동사 선택 토글 버튼 */
+.verbToggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px dashed #a78bfa;
+  background: #f8f5ff;
+  color: #7c3aed;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.verbToggleBtn:hover {
+  background: #ede9fe;
+}

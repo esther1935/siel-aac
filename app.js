@@ -127,6 +127,7 @@ function normalizeSpeakValues() {
     cat.cards.forEach(card => {
       if (!card.id) card.id = crypto.randomUUID();
       card.speak = card.text || "";
+      if (!card.verbs) card.verbs = [];
     });
   });
 }
@@ -274,7 +275,12 @@ function renderCards() {
     `;
     el.onclick = () => {
       selectedCardId = card.id;
-      addToSentence(card);
+      // 동사가 연결된 카드면 팝업 표시
+      if (card.verbs && card.verbs.length > 0) {
+        showVerbPopup(card, el);
+      } else {
+        addToSentence(card);
+      }
       renderCards();
     };
     scroller.appendChild(el);
@@ -318,6 +324,199 @@ function updateDots() {
   const active = Math.min(total - 1, Math.round((scroller.scrollLeft / maxScroll) * (total - 1)));
   renderDots(total, active);
 }
+
+
+// ===== 동사 연결 기능 =====
+let selectedVerbs = []; // 현재 업로드 중인 카드의 선택된 동사 IDs
+
+// 동사 카테고리 찾기 (이름에 "동사" 포함)
+function getVerbCategory() {
+  return data.categories.find(c => c.name.includes("동사"));
+}
+
+// 동사 선택 패널 렌더링
+function renderVerbPicker() {
+  const panel = $("verbPickerList");
+  if (!panel) return;
+  panel.innerHTML = "";
+
+  const verbCat = getVerbCategory();
+  if (!verbCat || verbCat.cards.length === 0) {
+    panel.innerHTML = '<p style="color:#bbb;font-size:0.85rem;">동사 카테고리에 그림을 먼저 추가해 주세요</p>';
+    return;
+  }
+
+  verbCat.cards.forEach(verb => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.verbId = verb.id;
+    btn.style.cssText = `
+      display:inline-flex;align-items:center;gap:4px;
+      padding:6px 12px;border-radius:20px;font-size:0.9rem;font-weight:700;
+      border:2px solid ${selectedVerbs.includes(verb.id) ? "#a78bfa" : "#ddd"};
+      background:${selectedVerbs.includes(verb.id) ? "#f0ebff" : "#fff"};
+      color:${selectedVerbs.includes(verb.id) ? "#7c3aed" : "#555"};
+      cursor:pointer;transition:all 0.15s;
+    `;
+    btn.textContent = verb.text;
+    btn.onclick = () => {
+      if (selectedVerbs.includes(verb.id)) {
+        selectedVerbs = selectedVerbs.filter(id => id !== verb.id);
+      } else {
+        selectedVerbs.push(verb.id);
+      }
+      renderVerbPicker();
+      renderVerbChips();
+    };
+    panel.appendChild(btn);
+  });
+}
+
+// 선택된 동사 칩 표시
+function renderVerbChips() {
+  const area = $("verbChipArea");
+  if (!area) return;
+  area.innerHTML = "";
+  const verbCat = getVerbCategory();
+  if (!verbCat) return;
+
+  selectedVerbs.forEach(vid => {
+    const verb = verbCat.cards.find(c => c.id === vid);
+    if (!verb) return;
+    const chip = document.createElement("span");
+    chip.style.cssText = "display:inline-flex;align-items:center;gap:4px;background:#a78bfa;color:#fff;padding:4px 10px;border-radius:16px;font-size:0.85rem;font-weight:700;";
+    chip.innerHTML = verb.text + ' <button type="button" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;line-height:1;padding:0;" data-vid="' + vid + '">×</button>';
+    chip.querySelector("button").onclick = () => {
+      selectedVerbs = selectedVerbs.filter(id => id !== vid);
+      renderVerbPicker();
+      renderVerbChips();
+    };
+    area.appendChild(chip);
+  });
+}
+
+// 동사 선택 패널 토글
+$("verbToggleBtn") && ($("verbToggleBtn").onclick = () => {
+  const panel = $("verbPickerPanel");
+  const isOpen = panel.style.display !== "none";
+  panel.style.display = isOpen ? "none" : "block";
+  if (!isOpen) renderVerbPicker();
+  $("verbToggleBtn").textContent = isOpen ? "＋ 동사 선택하기" : "▲ 닫기";
+});
+
+// 카드 클릭 시 동사 팝업
+function showVerbPopup(card, anchorEl) {
+  // 기존 팝업 제거
+  const old = document.getElementById("verbPopup");
+  if (old) {
+    old.remove();
+    // 같은 카드 클릭 시 토글
+    if (old.dataset.cardId === card.id) {
+      addToSentence(card);
+      return;
+    }
+  }
+
+  const verbCat = getVerbCategory();
+  if (!verbCat) { addToSentence(card); return; }
+
+  const verbCards = card.verbs
+    .map(vid => verbCat.cards.find(c => c.id === vid))
+    .filter(Boolean);
+
+  if (verbCards.length === 0) { addToSentence(card); return; }
+
+  const popup = document.createElement("div");
+  popup.id = "verbPopup";
+  popup.dataset.cardId = card.id;
+  popup.style.cssText = `
+    position:fixed;z-index:9000;
+    background:#fff;border:2px solid #a78bfa;
+    border-radius:16px;padding:10px 12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.15);
+    display:flex;flex-direction:column;gap:8px;
+    max-width:260px;
+  `;
+
+  // 제목
+  const title = document.createElement("p");
+  title.style.cssText = "margin:0;font-size:0.8rem;color:#a78bfa;font-weight:700;";
+  title.textContent = """ + card.text + "" 와 함께:";
+  popup.appendChild(title);
+
+  // 동사 버튼들
+  const btnRow = document.createElement("div");
+  btnRow.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+
+  // 단독 사용 버튼
+  const aloneBtn = document.createElement("button");
+  aloneBtn.type = "button";
+  aloneBtn.style.cssText = "padding:6px 14px;border-radius:20px;border:2px solid #eee;background:#f5f5f5;font-size:0.9rem;font-weight:700;color:#888;cursor:pointer;";
+  aloneBtn.textContent = card.text + " (단독)";
+  aloneBtn.onclick = () => { popup.remove(); addToSentence(card); };
+  btnRow.appendChild(aloneBtn);
+
+  verbCards.forEach(verb => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.style.cssText = "padding:6px 14px;border-radius:20px;border:2px solid #a78bfa;background:#f0ebff;font-size:0.95rem;font-weight:700;color:#7c3aed;cursor:pointer;";
+    btn.textContent = card.text + " " + verb.text;
+    btn.onclick = () => {
+      popup.remove();
+      // 카드+동사 조합을 문장에 추가
+      const combined = {
+        id: card.id + "_" + verb.id,
+        text: card.text + " " + verb.text,
+        speak: card.text + " " + verb.text,
+        image: card.image || ""
+      };
+      addToSentence(combined);
+    };
+    btnRow.appendChild(btn);
+  });
+
+  popup.appendChild(btnRow);
+  document.body.appendChild(popup);
+
+  // 위치 계산
+  const rect = anchorEl.getBoundingClientRect();
+  const pw = popup.offsetWidth || 260;
+  let left = rect.left + rect.width/2 - pw/2;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  let top = rect.top - 10;
+  if (top < 60) top = rect.bottom + 10;
+  popup.style.left = left + "px";
+  popup.style.top = top + "px";
+
+  // 바깥 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener("click", function closeVerb(e) {
+      if (!popup.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener("click", closeVerb);
+      }
+    });
+  }, 100);
+}
+
+// 카드 추가/수정 시 동사 초기화
+function resetVerbSelect() {
+  selectedVerbs = [];
+  renderVerbChips();
+  const panel = $("verbPickerPanel");
+  if (panel) panel.style.display = "none";
+  const btn = $("verbToggleBtn");
+  if (btn) btn.textContent = "＋ 동사 선택하기";
+}
+
+// 동사 선택 행 표시 (카테고리에 동사 카테고리가 있을 때만)
+function updateVerbSelectRow() {
+  const row = $("verbSelectRow");
+  if (!row) return;
+  const verbCat = getVerbCategory();
+  row.style.display = verbCat ? "" : "none";
+}
+// ===== 동사 기능 끝 =====
 
 function addToSentence(card) {
   const entry = { id: card.id, text: card.text, speak: card.text, image: card.image || "" };
@@ -497,6 +696,8 @@ function renderCategoryManageList() {
 function resetEditMode() {
   editingCardId = "";
   $("cardText").value = "";
+  resetVerbSelect();
+  updateVerbSelectRow();
   $("cardSpeak").value = "";
   $("imageInput").value = "";
   $("addCardBtn").textContent = "그림 추가";
@@ -747,6 +948,7 @@ function renderAdmin() {
   }
 
   renderCategoryManageList();
+  updateVerbSelectRow();
 
   const del = $("deleteList");
   del.innerHTML = "";
@@ -780,6 +982,11 @@ function renderAdmin() {
         editingCardId = card.id;
         $("categorySelect").value = cat.id;
         $("cardText").value = card.text || "";
+        // 기존 동사 불러오기
+        selectedVerbs = card.verbs ? [...card.verbs] : [];
+        renderVerbChips();
+        renderVerbPicker();
+        updateVerbSelectRow();
         $("cardSpeak").value = card.text || "";
         $("imageInput").value = "";
         $("addCardBtn").textContent = "수정 저장";
@@ -1426,6 +1633,7 @@ $("addCardBtn").onclick = async () => {
 
       card.text = text;
       card.speak = text;
+      card.verbs = [...selectedVerbs]; // 동사 저장
 
       if (file) {
         const croppedDataUrl = await openCropDialog(file);
@@ -1463,7 +1671,7 @@ $("addCardBtn").onclick = async () => {
       }
     }
 
-    cat.cards.push({ id: cardId, text, speak: text, image, storagePath });
+    cat.cards.push({ id: cardId, text, speak: text, image, storagePath, verbs: [...selectedVerbs] });
     selectedCategoryId = cat.id;
     resetEditMode();
     saveData();
