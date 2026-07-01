@@ -499,9 +499,9 @@ dialog::backdrop {
 }
 
 .adminMenu {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .primary {
@@ -715,17 +715,10 @@ hr {
 }
 
 .adminMenu {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 8px !important;
-  margin: 12px 0 22px;
-}
-
-.adminMenu button {
-  height: 48px;
-  border-radius: 14px !important;
-  font-size: 20px !important;
-  font-weight: 900;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin: 8px 0 16px;
 }
 
 .adminRow {
@@ -1079,4 +1072,82 @@ hr {
     height: clamp(48px, 7svh, 64px) !important;
     font-size: clamp(12px, 3vw, 16px) !important;
   }
+}
+
+
+
+/* 메뉴 헤더: 타이틀 + 관리자 로그인 */
+.menuHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.menuHeader h2 {
+  margin: 0;
+  font-size: clamp(18px, 4vw, 24px);
+}
+.adminLoginLink {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+.adminLoginLink:hover {
+  color: #b8a000;
+}
+
+/* 선생님 전용 안내 텍스트 */
+#teacherPinArea p {
+  font-size: 11px !important;
+  color: #bbb !important;
+}
+
+/* 선생님용 그림추가 버튼 - 크고 중앙 */
+.teacherMainBtn {
+  width: 100%;
+  padding: clamp(14px, 2.5vh, 20px);
+  font-size: clamp(18px, 3.5vw, 24px) !important;
+  font-weight: 900 !important;
+  margin-top: 12px;
+  border-radius: 16px !important;
+  letter-spacing: 2px;
+}
+
+/* 관리자 탭 바 - 중앙 텍스트만 */
+.adminTabBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 0 6px;
+  border: none;
+  margin-bottom: 8px;
+  width: 100%;
+}
+.adminTab {
+  flex: none;
+  padding: 4px 6px;
+  font-size: clamp(12px, 3vw, 15px);
+  font-weight: 600;
+  border: none;
+  background: none;
+  color: #aaa;
+  cursor: pointer;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.adminTab.active {
+  background: none;
+  color: #b8a000;
+  font-weight: 800;
+}
+.adminTabDivider {
+  color: #ddd;
+  font-size: 1rem;
+  flex-shrink: 0;
 }

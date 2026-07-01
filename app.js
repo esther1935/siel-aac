@@ -2,6 +2,8 @@
 const PIN_STORAGE_KEY = "siel_admin_pin";
 const TEACHER_PINS_KEY = "siel_teacher_pins";
 
+// PIN은 Firebase에 저장해서 모든 기기 공유
+// 로컬은 캐시용으로만 사용
 function getAdminPin() {
   return localStorage.getItem(PIN_STORAGE_KEY) || "1208";
 }
@@ -38,7 +40,7 @@ async function loadPinsFromCloud() {
       if (d.adminPin) localStorage.setItem(PIN_STORAGE_KEY, d.adminPin);
       if (d.teacherPins) localStorage.setItem(TEACHER_PINS_KEY, JSON.stringify(d.teacherPins));
     }
-  } catch(e) { console.warn("PIN 불러오기 실패:", e); }
+  } catch(e) { console.warn("PIN 클라우드 불러오기 실패:", e); }
 }
 const STORE_KEY = "siel_aac_data_v1";
 const RECENT_KEY = "siel_aac_recent_v1";
@@ -358,19 +360,30 @@ const emojiList = [
 ];
 
 function showEmojiPicker(cat, anchorBtn) {
+  // 기존 팝업 제거
   const old = document.getElementById("emojiPickerPopup");
   if (old) { old.remove(); return; }
 
   const popup = document.createElement("div");
   popup.id = "emojiPickerPopup";
-  popup.style.cssText = "position:absolute;z-index:99999;background:#fff;border:2px solid #f5c842;border-radius:16px;padding:12px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px;width:290px;max-height:220px;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,0.25);";
+  popup.style.cssText = `
+    position:absolute; z-index:99999;
+    background:#fff; border:2px solid #f5c842;
+    border-radius:16px; padding:12px;
+    display:grid; grid-template-columns:repeat(7,1fr);
+    gap:6px; width:290px; max-height:220px;
+    overflow-y:auto; box-shadow:0 4px 24px rgba(0,0,0,0.25);
+  `;
 
+  // 다이얼로그 안에 추가 (z-index 문제 해결)
   const dialog = document.getElementById("adminDialog");
   const anchor = dialog || document.body;
+  anchor.style.position = anchor.style.position || "relative";
 
+  // 위치: 버튼 기준
   const btnRect = anchorBtn.getBoundingClientRect();
   const anchorRect = anchor.getBoundingClientRect();
-  popup.style.top = (btnRect.bottom - anchorRect.top + (anchor.scrollTop||0) + 4) + "px";
+  popup.style.top = (btnRect.bottom - anchorRect.top + anchor.scrollTop + 4) + "px";
   popup.style.left = Math.max(0, Math.min(btnRect.left - anchorRect.left, anchorRect.width - 300)) + "px";
 
   emojiList.forEach(em => {
@@ -391,6 +404,7 @@ function showEmojiPicker(cat, anchorBtn) {
 
   anchor.appendChild(popup);
 
+  // 바깥 클릭 시 닫기
   setTimeout(() => {
     document.addEventListener("click", function closePopup(e) {
       if (!popup.contains(e.target) && e.target !== anchorBtn) {
@@ -414,7 +428,7 @@ function renderCategoryManageList() {
     const count = Array.isArray(cat.cards) ? cat.cards.length : 0;
 
     row.innerHTML = `
-      <div class="catManageIcon">${escapeHtml(icon)}</div>
+      <button class="catIconBtn" type="button" title="아이콘 바꾸기">${escapeHtml(icon)}</button>
       <input class="catRenameInput" value="${escapeHtml(cat.name)}" aria-label="카테고리 이름" />
       <span class="catCardCount">${count}개</span>
       <button class="catUpBtn" type="button" ${index === 0 ? "disabled" : ""}>⬆️</button>
@@ -422,6 +436,11 @@ function renderCategoryManageList() {
       <button class="catRenameBtn" type="button">이름 저장</button>
       <button class="catDeleteBtn" type="button">삭제</button>
     `;
+
+    // 아이콘 버튼 클릭 → 이모지 선택 팝업
+    row.querySelector(".catIconBtn").onclick = () => {
+      showEmojiPicker(cat, row.querySelector(".catIconBtn"));
+    };
 
     const input = row.querySelector(".catRenameInput");
 
@@ -688,7 +707,7 @@ async function registerServiceWorker() {
   }
 
   try {
-    await navigator.serviceWorker.register("./sw.js?v=sielRestore20260630");
+    await navigator.serviceWorker.register("./sw.js?v=sielPinUpdate20260629");
     updateSyncStatus();
   } catch (e) {
     console.warn("서비스워커 등록 실패:", e);
@@ -713,8 +732,8 @@ function renderAdmin() {
     select.appendChild(option);
   });
 
-  // 선생님 모드: 카테고리 추가/관리 숨김
-  const catManager = document.querySelector(".categoryManager");
+  // 선생님 모드: 카테고리 추가/관리 숨김 (pinManager는 로그인 버튼에서만 제어)
+  const catManager = document.querySelector(".categoryManager:not(#pinManager)");
   const manageTitle = document.querySelector(".manageTitle");
   const addCatRow = $("addCategoryBtn") ? $("addCategoryBtn").closest(".adminRow") : null;
   if (teacherMode) {
@@ -1167,6 +1186,11 @@ async function clearOldCachesOnce() {
 function openAdminTab(tab) {
   $("uploadPanel").classList.toggle("hidden", tab !== "upload");
   $("boardPanel").classList.toggle("hidden", tab !== "board");
+  // 탭 active 상태 업데이트
+  const uploadTab = $("showUploadBtn");
+  const boardTab = $("showBoardBtn");
+  if (uploadTab) uploadTab.classList.toggle("active", tab === "upload");
+  if (boardTab) boardTab.classList.toggle("active", tab === "board");
 }
 
 $("menuBtn").onclick = () => {
@@ -1185,7 +1209,10 @@ $("menuBtn").onclick = () => {
   if (guide) guide.remove();
   const catSel = $("categorySelect");
   if (catSel) catSel.disabled = false;
-  // 기본: 선생님 화면으로 시작 (선생님 PIN 있을 때)
+  // 비밀번호 관리 다시 숨기기 (다음 로그인 전까지)
+  const pinMgr = $("pinManager");
+  if (pinMgr) pinMgr.style.display = "none";
+  // 기본: 선생님 PIN 있으면 선생님 화면, 없으면 관리자 화면
   const tPins = getTeacherPins();
   if (tPins.length > 0) {
     $("pinArea").classList.add("hidden");
@@ -1195,6 +1222,9 @@ $("menuBtn").onclick = () => {
     $("pinArea").classList.remove("hidden");
     $("teacherPinArea").classList.add("hidden");
   }
+  // switchToAdminBtn: 항상 표시 (선생님 PIN 있을 때만 의미 있음)
+  const sBtn = $("switchToAdminBtn");
+  if (sBtn) sBtn.style.display = tPins.length > 0 ? "" : "none";
   $("adminDialog").showModal();
 };
 
@@ -1202,6 +1232,7 @@ $("menuBtn").onclick = () => {
 $("switchToAdminBtn") && ($("switchToAdminBtn").onclick = () => {
   $("teacherPinArea").classList.add("hidden");
   $("pinArea").classList.remove("hidden");
+  $("pinInput").focus();
 });
 
 function renderTeacherCategorySelect() {
@@ -1273,10 +1304,29 @@ $("showBoardBtn").onclick = () => openAdminTab("board");
 
 $("loginBtn").onclick = () => {
   if ($("pinInput").value === getAdminPin()) {
+    // 선생님 모드 초기화
+    teacherMode = false;
+    teacherCatId = null;
+
     $("adminPanel").classList.remove("hidden");
     $("adminMenu").classList.remove("hidden");
+
+    // 관리자 전용: 비밀번호 관리 보이게
+    const pinManager = $("pinManager");
+    if (pinManager) pinManager.style.display = "";
+
+    // syncStatus 복원
+    const syncStatus = $("syncStatus");
+    if (syncStatus) syncStatus.style.display = "";
+
+    // 안내 메시지 제거
+    const guide = $("teacherGuide");
+    if (guide) guide.remove();
+
     const sel = $("categorySelect");
     if (sel) sel.disabled = false;
+
+    renderAdmin();
     renderTeacherPinList();
   } else {
     alert("비밀번호가 맞지 않아요.");
@@ -1532,7 +1582,7 @@ window.addEventListener("resize", updateDots);
 
 async function initFirebase() {
   try {
-    const configModule = await import("./firebase-config.js?v=sielRestore20260630");
+    const configModule = await import("./firebase-config.js?v=sielPinUpdate20260629");
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
     const { getFirestore, doc, setDoc, getDoc, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     const { getStorage, ref: storageRef, uploadString, getDownloadURL, deleteObject } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js");
@@ -1552,6 +1602,7 @@ async function initFirebase() {
       deleteObject
     };
 
+    // PIN 클라우드에서 불러오기
     await loadPinsFromCloud();
 
     const ref = doc(db, "aac", "siel");
